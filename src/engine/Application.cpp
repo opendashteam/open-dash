@@ -33,7 +33,7 @@ bool Application::init(const char* title, int width, int height)
 
     windowWidth_ = width;
     windowHeight_ = height;
-    projectionMatrix_ = glm::ortho(0.0f, (float)windowWidth_, (float)windowHeight_, 0.0f, -1.0f, 1.0f);
+    projectionMatrix_ = glm::ortho(0.0f, (float)windowWidth_, 0.0f, (float)windowHeight_, -1.0f, 1.0f);
 
     device_ = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, nullptr);
     if (!device_) return false;

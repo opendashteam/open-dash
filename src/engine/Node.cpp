@@ -302,8 +302,6 @@ glm::mat4 Node::computeLocalTransformMatrix() {
         0.0f
     ));
 
-    // transform = glm::scale(transform, glm::vec3(contentSize_.width, contentSize_.height, 1.0f));
-
     return transform;
 }
 

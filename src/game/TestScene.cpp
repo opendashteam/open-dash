@@ -16,10 +16,8 @@ bool TestScene::init() {
         return false;
     }
 
-    cubeSprite->setRotation(30);
-    cubeSprite->setPosition(60, 60);
-    cubeSprite->setScale(2.0f);
-    cubeSprite->setSkewX(10.0f);
+    cubeSprite->setRotation(10);
+    cubeSprite->setAnchorPoint(0.0f, 0.0f);
 
     // Retrieve the value back since cubeSprite becomes nullptr after std::move is called
     // Might need an easier-to-type version of this soon
