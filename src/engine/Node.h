@@ -17,7 +17,16 @@ public:
     /*
         Need to call std::move(child) for this to work.
     */
-    virtual Node* addChild(std::unique_ptr<Node> child);
+    template<typename T>
+    T* addChild(std::unique_ptr<T> child) {
+        if (child) {
+            child->parent_ = this;
+        }
+
+        T* raw = child.get();
+        children_.push_back(std::move(child));
+        return raw;
+    }
     
     virtual void draw(SDL_GPURenderPass* pass, SDL_GPUGraphicsPipeline* pipeline, SDL_GPUCommandBuffer* commandBuffer);
     virtual void visit(SDL_GPURenderPass* pass, SDL_GPUGraphicsPipeline* pipeline, SDL_GPUCommandBuffer* commandBuffer);

@@ -6,7 +6,7 @@ using namespace opendash;
 int main(int argc, char* argv[]) {
 
     // TODO: store the previous window dimensions somewhere on disk and load them here
-    auto app = engine::Application::create("Open Dash", 1920, 1080);
+    auto app = engine::Application::create("Open Dash", 1280, 720);
     if (!app)
         return 1;
 

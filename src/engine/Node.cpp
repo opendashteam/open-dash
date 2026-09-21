@@ -19,17 +19,6 @@ void Node::markWorldTransformDirty() {
     }
 }
 
-Node* Node::addChild(std::unique_ptr<Node> child) {
-    if (child) {
-        child->parent_ = this;
-    }
-
-    Node* raw = child.get();
-    children_.push_back(std::move(child));
-
-    return raw;
-}
-
 const std::vector<std::unique_ptr<Node>>& Node::getChildren() const
 {
     return children_;

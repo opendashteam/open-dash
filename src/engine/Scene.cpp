@@ -18,7 +18,7 @@ void Scene::render(SDL_GPUGraphicsPipeline* pipeline, SDL_GPUCommandBuffer* comm
     colorTargetInfo.texture = swapchainTexture;
     colorTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
     colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
-    colorTargetInfo.clear_color = {0.0f, 0.0f, 0.0f, 1.0f};
+    // colorTargetInfo.clear_color = {0.0f, 0.0f, 0.0f, 1.0f};
 
     SDL_GPURenderPass* pass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, nullptr);
 
@@ -95,6 +95,10 @@ bool Scene::setupPipeline() {
 
     app->setPipeline(pipeline);
     return true;
+}
+
+void Scene::update(float dt) {
+    // override me
 }
 
 SDL_GPUShader* Scene::loadShader(SDL_GPUDevice* dev, const char* path, SDL_GPUShaderStage stage, Uint32 numSamplers, Uint32 numUniformBuffers)

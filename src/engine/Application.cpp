@@ -51,13 +51,21 @@ bool Application::init(const char* title, int width, int height)
 void Application::run() {
     running_ = true;
 
+    Uint64 lastTicks = SDL_GetTicksNS();
+
     while (running_) {
+        
+        // compute delta time
+        Uint64 currentTicks = SDL_GetTicksNS();
+        float deltaTime = (currentTicks - lastTicks) / 1'000'000'000.0f;
+        lastTicks = currentTicks;
+
         pollEvents();
 
         commandBuffer_ = SDL_AcquireGPUCommandBuffer(device_);
-
         if (!tryGetSwapchainTexture()) continue;
 
+        currentScene_->update(deltaTime);
         currentScene_->render(pipeline_, commandBuffer_, swapchainTexture_);
     }
 }

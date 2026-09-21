@@ -44,20 +44,20 @@ bool Sprite::initWithPath(const std::filesystem::path& path) {
 void Sprite::draw(SDL_GPURenderPass* pass, SDL_GPUGraphicsPipeline* pipeline, SDL_GPUCommandBuffer* commandBuffer) {
     auto* app = Application::get();
     glm::mat4 contentScale = glm::scale(glm::mat4(1.0f), glm::vec3(getContentWidth(), getContentHeight(), 1.0f));
-    glm::mat4 mvp = app->getProjectionMatrix() * getWorldTransform() * contentScale;
-    SDL_PushGPUVertexUniformData(commandBuffer, 0, &mvp, sizeof(mvp));
+    glm::mat4 vertexData = app->getProjectionMatrix() * getWorldTransform() * contentScale;
 
+    SDL_PushGPUVertexUniformData(commandBuffer, 0, &vertexData, sizeof(vertexData));
     SDL_BindGPUGraphicsPipeline(pass, pipeline);
 
     SDL_GPUBufferBinding vertexBinding{};
     vertexBinding.buffer = Sprite::getSharedQuadBuffer();
-    SDL_BindGPUVertexBuffers(pass, 0, &vertexBinding, 1);
 
     SDL_GPUTextureSamplerBinding textureBinding{};
     textureBinding.texture = texture_->gpuTexture;
     textureBinding.sampler = texture_->sampler;
-    SDL_BindGPUFragmentSamplers(pass, 0, &textureBinding, 1);
 
+    SDL_BindGPUVertexBuffers(pass, 0, &vertexBinding, 1);
+    SDL_BindGPUFragmentSamplers(pass, 0, &textureBinding, 1);
     SDL_DrawGPUPrimitives(pass, 6, 1, 0, 0);
 }
 
