@@ -20,6 +20,11 @@ public:
 
     std::filesystem::path getFullPath(const std::filesystem::path& relative);
 
+    bool readFileAsString(
+        const std::filesystem::path& relativePath,
+        std::string& outputString
+    );
+
     bool cacheTexture(const std::filesystem::path& relativePath);
 
     bool isTextureCached(const std::filesystem::path& relativePath);
@@ -31,9 +36,16 @@ public:
     Texture* getCachedTexture(const std::filesystem::path& relativePath);
 
     /*
+        Loads a cocos2d spritesheet that has .plist and .png.
+        The extension should not be written in relativePath.
+    */
+    bool loadSpriteSheet(const std::filesystem::path& relativePath);
+
+    /*
         Free all GPU textures and samplers that are stored.
     */
     void releaseAllTextures(SDL_GPUDevice* device);
+
 protected:
     virtual bool init();
 private:

@@ -4,6 +4,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../third_party/stb_image.h"
 
+#include <fstream>
+
 namespace opendash::engine
 {
 
@@ -27,6 +29,20 @@ std::unique_ptr<AssetManager> AssetManager::create() {
 std::filesystem::path AssetManager::getFullPath(const std::filesystem::path& relative) {
     std::filesystem::path texturePath = std::filesystem::path(kParentDirectory) / relative;
     return texturePath;
+}
+
+bool AssetManager::readFileAsString(const std::filesystem::path& relativePath, std::string& outputString) {
+    std::ifstream file = std::ifstream(getFullPath(relativePath));
+    if (!file.is_open())
+        return false;
+
+    file.seekg(0, std::ios::end);
+    size_t size = file.tellg();
+    outputString.resize(size);
+    file.seekg(0);
+    file.read(outputString.data(), size); 
+    file.close();
+    return true;
 }
 
 /*
