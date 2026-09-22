@@ -57,14 +57,5 @@ struct Rect {
     // TODO more stuff
 };
 
-/*
-struct Texture {
-    SDL_GPUTexture* gpuTexture = nullptr;
-    SDL_GPUSampler* sampler = nullptr;
-    int width;
-    int height;
-};
-*/
-
 }
 
