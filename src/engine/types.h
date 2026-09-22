@@ -1,10 +1,21 @@
 #pragma once
 
 #include <filesystem>
-#include <SDL3/SDL.h>
+#include <cstdint>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace opendash::engine
 {
+
+using u8  = uint8_t;
+using u16 = uint16_t;
+using u32 = uint32_t;
+using u64 = uint64_t;
+using i8  = int8_t;
+using i16 = int16_t;
+using i32 = int32_t;
+using i64 = int64_t;
 
 struct Vertex {
     float x, y;
@@ -18,16 +29,15 @@ struct PathHash {
 };
 
 struct Color3B {
-    unsigned char r;
-    unsigned char g;
-    unsigned char b;
+    u8 r, g, b;
 };
 
 struct Color4B {
-    unsigned char r;
-    unsigned char g;
-    unsigned char b;
-    unsigned char a;
+    u8 r, g, b, a;
+};
+
+struct Color4F {
+    float r, g, b, a;
 };
 
 struct Size {
@@ -47,12 +57,14 @@ struct Rect {
     // TODO more stuff
 };
 
+/*
 struct Texture {
     SDL_GPUTexture* gpuTexture = nullptr;
     SDL_GPUSampler* sampler = nullptr;
     int width;
     int height;
 };
+*/
 
 }
 

@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <filesystem>
 #include "types.h"
+#include "Texture.hpp"
 
 namespace opendash::engine
 {
@@ -44,13 +45,13 @@ public:
     /*
         Free all GPU textures and samplers that are stored.
     */
-    void releaseAllTextures(SDL_GPUDevice* device);
+    void releaseAllTextures();
 
 protected:
     virtual bool init();
 private:
     static AssetManager* instance_;
-    std::unordered_map<std::filesystem::path, Texture, PathHash> cachedTextures_;
+    std::unordered_map<std::filesystem::path, Texture*, PathHash> cachedTextures_;
 };
 
 }

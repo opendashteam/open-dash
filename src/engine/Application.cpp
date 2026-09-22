@@ -1,7 +1,6 @@
 #include "Application.h"
-#include "Sprite.h"
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include <platform/Window.h>
+#include "log.h"
 
 namespace opendash::engine
 {
@@ -12,7 +11,7 @@ Application *Application::get() {
     return instance_;
 }
 
-std::unique_ptr<Application> Application::create(const char* title, int width, int height)
+std::unique_ptr<Application> Application::create(const std::string& title, int width, int height)
 {
     auto ret = std::make_unique<Application>();
 
@@ -24,21 +23,9 @@ std::unique_ptr<Application> Application::create(const char* title, int width, i
     return ret;
 }
 
-bool Application::init(const char* title, int width, int height)
+bool Application::init(const std::string& title, int width, int height)
 {
-    SDL_Init(SDL_INIT_VIDEO);
-
-    window_ = SDL_CreateWindow(title, width, height, 0);
-    if (!window_) return false;
-
-    windowWidth_ = width;
-    windowHeight_ = height;
-    projectionMatrix_ = glm::ortho(0.0f, (float)windowWidth_, 0.0f, (float)windowHeight_, -1.0f, 1.0f);
-
-    device_ = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, nullptr);
-    if (!device_) return false;
-
-    if (!SDL_ClaimWindowForGPUDevice(device_, window_))
+    if (!platform::Window::init(title, width, height))
         return false;
 
     // claim ownership of certain stuff
@@ -49,95 +36,45 @@ bool Application::init(const char* title, int width, int height)
 }
 
 void Application::run() {
-    running_ = true;
+    double lastTime = platform::Window::getTime();
 
-    Uint64 lastTicks = SDL_GetTicksNS();
+    AssetManager::get()->cacheTexture("cube.png");
 
-    while (running_) {
-        
+    Texture* texture = AssetManager::get()->getCachedTexture("cube.png");
+
+    while (!platform::Window::shouldClose()) {
         // compute delta time
-        Uint64 currentTicks = SDL_GetTicksNS();
-        float deltaTime = (currentTicks - lastTicks) / 1'000'000'000.0f;
-        lastTicks = currentTicks;
+        double now = platform::Window::getTime();
+        float deltaTime = now - lastTime;
+        lastTime = now;
 
-        pollEvents();
+        platform::Window::pollEvents();
 
-        commandBuffer_ = SDL_AcquireGPUCommandBuffer(device_);
-        if (!tryGetSwapchainTexture()) continue;
+        Graphics* gfx = platform::Window::getGraphics();
+
+        Size windowSize;
+        gfx->beginDraw({1.0, 0.0, 0.0, 1.0}, windowSize);
+
+        projectionMatrix_ = glm::ortho(0.0f, windowSize.width, 0.0f, windowSize.height, -1.0f, 1.0f);
 
         currentScene_->update(deltaTime);
-        currentScene_->render(pipeline_, commandBuffer_, swapchainTexture_);
+        currentScene_->render(gfx);
+
+        gfx->finishDraw();
     }
 }
 
 void Application::quit() {
-    if (assetManager_)
-        assetManager_->releaseAllTextures(device_);
-
-    if (auto sharedQuadBuffer = Sprite::getSharedQuadBuffer())
-        SDL_ReleaseGPUBuffer(device_, sharedQuadBuffer);
-
-    SDL_ReleaseGPUGraphicsPipeline(device_, pipeline_);
-    SDL_ReleaseWindowFromGPUDevice(device_, window_);
-    SDL_DestroyGPUDevice(device_);
-    SDL_DestroyWindow(window_);
-}
-
-void Application::pollEvents() {
-    SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
-            running_ = false;
-        }
-        // later: pass other events (input, etc.) down to the current scene (or keep them here idk)
-    }
-}
-
-bool Application::tryGetSwapchainTexture() {
-    bool success = true;
-    Uint32 w, h;
-
-    SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer_, window_, &swapchainTexture_, &w, &h);
-
-    if (!swapchainTexture_) {
-        SDL_SubmitGPUCommandBuffer(commandBuffer_);
-        success = false;
-    }
-    
-    return success;
-}
-
-SDL_GPUDevice* Application::getDevice() {
-    return device_;
-}
-
-SDL_Window* Application::getWindow() {
-    return window_;
-}
-
-SDL_GPUTexture *Application::getSwapchainTexture() {
-    return swapchainTexture_;
-}
-
-SDL_GPUCommandBuffer *Application::getCommandBuffer() {
-    return commandBuffer_;
-}
-
-SDL_GPUGraphicsPipeline *Application::getPipeline()
-{
-    return pipeline_;
-}
-
-const glm::mat4 &Application::getProjectionMatrix() {
-    return projectionMatrix_;
+    AssetManager::get()->releaseAllTextures();
+    platform::Window::destroy();
 }
 
 void Application::setScene(std::unique_ptr<Scene> scene) {
     currentScene_ = std::move(scene);
 }
 
-void Application::setPipeline(SDL_GPUGraphicsPipeline *pipeline) {
-    pipeline_ = pipeline;
+const glm::mat4 &Application::getProjectionMatrix() {
+    return projectionMatrix_;
 }
 
 }

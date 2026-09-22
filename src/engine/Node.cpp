@@ -24,18 +24,18 @@ const std::vector<std::unique_ptr<Node>>& Node::getChildren() const
     return children_;
 }
 
-void Node::draw(SDL_GPURenderPass* pass, SDL_GPUGraphicsPipeline* pipeline, SDL_GPUCommandBuffer* commandBuffer) {
+void Node::draw(Graphics* gfx) {
     // override me
 }
 
-void Node::visit(SDL_GPURenderPass* pass, SDL_GPUGraphicsPipeline* pipeline, SDL_GPUCommandBuffer* commandBuffer) {
+void Node::visit(Graphics* gfx) {
     if (!isVisible_) return;
 
-    this->draw(pass, pipeline, commandBuffer); // draw self
+    this->draw(gfx); // draw self
     
     // draw children
     for (auto& child : children_) {
-        child->visit(pass, pipeline, commandBuffer);
+        child->visit(gfx);
     }
 }
 

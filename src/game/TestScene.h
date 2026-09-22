@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../engine/Scene.h"
-#include "../engine/macros.h"
-#include "Sprite.h"
+#include <engine/Scene.h>
+#include <engine/macros.h>
+#include <engine/Sprite.h>
 
 using namespace opendash::engine;
 

@@ -198,7 +198,7 @@ static inline void xml__skip_whitespace(const char *xml, size_t *idx) {
 static inline char *xml__strndup(const char *str, size_t n) {
   void *dup = XML_CALLOC_FUNC(1, n + 1);
   memcpy(dup, str, n);
-  return dup;
+  return (char*)dup;
 }
 
 static inline char *xml__strdup(const char *str) { return xml__strndup(str, strlen(str)); }
@@ -280,7 +280,7 @@ XML_H_API XMLList *xml_list_new() {
   XMLList *list = (XMLList *)XML_CALLOC_FUNC(1, sizeof(XMLList));
   list->len = 0;
   list->size = 32;
-  list->data = XML_CALLOC_FUNC(1, sizeof(void *) * list->size);
+  list->data = (void**)XML_CALLOC_FUNC(1, sizeof(void *) * list->size);
   return list;
 }
 
@@ -289,7 +289,7 @@ XML_H_API void xml_list_add(XMLList *list, void *data) {
   if (!list || !data) return;
   if (list->len >= list->size) {
     list->size *= 2;
-    list->data = XML_REALLOC_FUNC(list->data, list->size * sizeof(void *));
+    list->data = (void**)XML_REALLOC_FUNC(list->data, list->size * sizeof(void *));
   }
   list->data[list->len++] = data;
 }
@@ -297,7 +297,7 @@ XML_H_API void xml_list_add(XMLList *list, void *data) {
 // ---------- XMLNode ---------- //
 
 XML_H_API XMLNode *xml_node_new(XMLNode *parent, const char *tag, const char *inner_text) {
-  XMLNode *node = XML_CALLOC_FUNC(1, sizeof(XMLNode));
+  XMLNode *node = (XMLNode*)XML_CALLOC_FUNC(1, sizeof(XMLNode));
   node->parent = parent;
   node->tag = tag ? xml__strdup(tag) : NULL;
   node->text = inner_text ? xml__strdup(inner_text) : NULL;
@@ -308,7 +308,7 @@ XML_H_API XMLNode *xml_node_new(XMLNode *parent, const char *tag, const char *in
 }
 
 XML_H_API void xml_node_add_attr(XMLNode *node, const char *key, const char *value) {
-  XMLAttr *attr = XML_CALLOC_FUNC(1, sizeof(XMLAttr));
+  XMLAttr *attr = (XMLAttr*)XML_CALLOC_FUNC(1, sizeof(XMLAttr));
   attr->key = xml__strdup(key);
   attr->value = xml__strdup(value);
   xml_list_add(node->attrs, attr);
@@ -329,7 +329,7 @@ XML_H_API XMLNode *xml_node_find_tag(XMLNode *node, const char *tag, bool exact)
       return node;
     // Recursively search through the children of the node
     for (size_t i = 0; i < node->children->len; i++) {
-      XMLNode *result = xml_node_find_tag(node->children->data[i], tag, exact);
+      XMLNode *result = xml_node_find_tag((XMLNode*)node->children->data[i], tag, exact);
       if (result) return result; // Return the first match found
     }
     return NULL;
@@ -413,7 +413,7 @@ static void xml__parse_tag_attributes(const char *xml, size_t *idx, XMLNode **cu
       break;
     }
     size_t attr_len = *idx - attr_start;
-    char* attr_key = malloc(attr_len + 1);
+    char* attr_key = (char*)malloc(attr_len + 1);
     strncpy(attr_key, xml + attr_start, attr_len);
     attr_key[attr_len] = '\0';
     xml__skip_whitespace(xml, idx);
@@ -431,7 +431,7 @@ static void xml__parse_tag_attributes(const char *xml, size_t *idx, XMLNode **cu
     }
     if (xml[*idx] == '\0') break;
     size_t value_len = *idx - value_start;
-    char* attr_value = malloc(value_len + 1);
+    char* attr_value = (char*)malloc(value_len + 1);
     strncpy(attr_value, xml + value_start, value_len);
     attr_value[value_len] = '\0';
     (*idx)++; // Skip closing quote
@@ -541,7 +541,7 @@ XML_H_API void xml_node_serialize(XMLNode *node, XMLString *str) {
     xml_string_append(str, node->tag);
     // Attributes
     for (size_t i = 0; i < node->attrs->len; ++i) {
-      XMLAttr *attr = node->attrs->data[i];
+      XMLAttr *attr = (XMLAttr*)node->attrs->data[i];
       xml_string_append(str, " ");
       xml_string_append(str, attr->key);
       xml_string_append(str, "=\"");
@@ -559,7 +559,7 @@ XML_H_API void xml_node_serialize(XMLNode *node, XMLString *str) {
   if (node->text) xml_string_append(str, node->text);
   // Children
   for (size_t i = 0; i < node->children->len; ++i) {
-    XMLNode *child = node->children->data[i];
+    XMLNode *child = (XMLNode*)node->children->data[i];
     xml_node_serialize(child, str);
   }
   // Closing tag

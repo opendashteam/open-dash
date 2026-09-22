@@ -6,6 +6,7 @@
 #include <memory>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "Graphics.h"
 
 namespace opendash::engine
 {
@@ -28,8 +29,8 @@ public:
         return raw;
     }
     
-    virtual void draw(SDL_GPURenderPass* pass, SDL_GPUGraphicsPipeline* pipeline, SDL_GPUCommandBuffer* commandBuffer);
-    virtual void visit(SDL_GPURenderPass* pass, SDL_GPUGraphicsPipeline* pipeline, SDL_GPUCommandBuffer* commandBuffer);
+    virtual void draw(Graphics* gfx);
+    virtual void visit(Graphics* gfx);
 
     // setters
     virtual void setPosition(const Point& position);
