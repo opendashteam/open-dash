@@ -286,8 +286,8 @@ glm::mat4 Node::computeLocalTransformMatrix() {
     transform = glm::scale(transform, glm::vec3(scale_.x, scale_.y, 1.0f));
 
     transform = glm::translate(transform, glm::vec3(
-        (0.5f - anchorPoint_.x) * contentSize_.width,
-        (0.5f - anchorPoint_.y) * contentSize_.height,
+        -anchorPoint_.x * contentSize_.width,
+        -anchorPoint_.y * contentSize_.height,
         0.0f
     ));
 

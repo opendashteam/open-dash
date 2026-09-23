@@ -209,10 +209,10 @@ SDLGPUGraphics* SDLGPUGraphics::create(SDL_Window* window)
 }
 
 static const float quadVerticies[] = {
-    -0.5f, -0.5f,
-    -0.5f,  0.5f,
-     0.5f, -0.5f,
-     0.5f,  0.5f
+    0.0f, 0.0f,
+    0.0f, 1.0f,
+    1.0f, 0.0f,
+    1.0f, 1.0f
 };
 
 bool SDLGPUGraphics::init()

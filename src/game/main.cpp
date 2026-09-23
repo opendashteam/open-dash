@@ -1,5 +1,4 @@
 #include "ExampleScene.h"
-#include "../engine/utilities/PList.h"
 #include "../engine/utilities/log.h"
 
 using namespace opendash;
