@@ -21,4 +21,12 @@ void Scene::update(float dt) {
     // override me
 }
 
+void Scene::setClearColor(const Color4F &clearColor) {
+    clearColor_ = clearColor;
+}
+
+const Color4F& Scene::getClearColor() const {
+    return clearColor_;
+}
+
 }

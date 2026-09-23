@@ -1,14 +1,8 @@
-# PC targets will use SDL
 if(
     ${TARGET_PLATFORM} STREQUAL "WINDOWS" OR
     ${TARGET_PLATFORM} STREQUAL "LINUX" OR
     ${TARGET_PLATFORM} STREQUAL "MAX"
 )
-    set(PLATFORM_SOURCES
-        "${CMAKE_CURRENT_SOURCE_DIR}/sdl/Window.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/sdl/SDLGPUGraphics.cpp"
-    )
-
     FetchContent_Declare(
         SDL3
         GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
@@ -23,14 +17,18 @@ if(
     )
     FetchContent_MakeAvailable(SDL3_mixer)
 
-    set(
-        PLATFORM_LIBRARIES 
+    set(OPENDASH_PLATFORM_SOURCES
+        "${CMAKE_CURRENT_SOURCE_DIR}/Window.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/SDLGPUGraphics.cpp"
+    )
+
+    set(OPENDASH_PLATFORM_LIBRARIES
         SDL3::SDL3
         SDL3_mixer::SDL3_mixer
     )
 endif()
 
-add_library(opendash_platform STATIC ${PLATFORM_SOURCES})
+add_library(opendash_platform STATIC ${OPENDASH_PLATFORM_SOURCES})
 
 target_include_directories(opendash_platform PUBLIC
     ${COMMON_INCLUDE}
@@ -38,5 +36,5 @@ target_include_directories(opendash_platform PUBLIC
 
 target_link_libraries(opendash_platform PUBLIC
     ${COMMON_LIBRARIES}
-    ${PLATFORM_LIBRARIES}
+    ${OPENDASH_PLATFORM_LIBRARIES}
 )

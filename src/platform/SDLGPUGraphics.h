@@ -1,10 +1,10 @@
 #pragma once
 
-#include <engine/Graphics.h>
+#include "../engine/Graphics.h"
 
 /*
     Because this header file includes SDL, it is important
-    to include this header file from sdl/Window.cpp or
+    to include this header file from Window.cpp or
     other related files only.
 */
 #include <SDL3/SDL.h>

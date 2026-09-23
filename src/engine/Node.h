@@ -42,7 +42,7 @@ public:
     virtual void setScaleY(float scaleY);
     virtual void setScale(const Point& scale);
     virtual void setScale(float x, float y);
-    virtual void setRotation(float rotation);
+    virtual void setRotation(float degrees);
     virtual void setAnchorPoint(const Point& anchorPoint);
     virtual void setAnchorPointX(float anchorPointX);
     virtual void setAnchorPointY(float anchorPointY);
@@ -78,6 +78,18 @@ public:
     const glm::mat4& getWorldTransform();
     const glm::mat4& getLocalTransform();
     virtual bool isVisible() const;
+
+    // relative transformations
+    virtual void rotateBy(float deltaDegrees);
+    virtual void moveBy(float deltaX, float deltaY);
+    virtual void moveBy(Point deltaPosition);
+    virtual void moveByX(float deltaX);
+    virtual void moveByY(float deltaY);
+    virtual void scaleBy(float modX, float modY);
+    virtual void scaleByX(float modX);
+    virtual void scaleByY(float modY);
+    virtual void scaleBy(float mod);
+    virtual void scaleBy(Point mod);
 
     // computation
     glm::mat4 computeLocalTransformMatrix();

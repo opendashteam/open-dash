@@ -1,6 +1,7 @@
 # TODO (fill this list whenever anyone has stuff to do)
 
-- Give Scene a `virtual void update(float dt)` method (might need Scheduler)
+- Design Resolution or a scaling fix
+- Content scale factor (for different texture resolutions)
 - Other sprite stuff
 - Sprite node destruction/removal from parent (and cleanup)
 - A TilingSprite class (useful for ground)

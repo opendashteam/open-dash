@@ -1,5 +1,5 @@
-#include <platform/Window.h>
-#include <engine/log.h>
+#include "Window.h"
+#include "engine/log.h"
 #include <SDL3/SDL.h>
 #include "SDLGPUGraphics.h"
 

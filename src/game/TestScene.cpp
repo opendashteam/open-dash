@@ -6,7 +6,7 @@ namespace opendash
 
 void TestScene::update(float dt) {
     if (cubeSprite_) {
-        cubeSprite_->setRotation(cubeSprite_->getRotation() + (180.0f / constants::player::kRotationDuration) * dt);
+        cubeSprite_->rotateBy((180.0f / constants::player::kRotationDuration) * dt);
     }
 }
 
@@ -14,6 +14,8 @@ bool TestScene::init() {
     if (!Scene::init()) { // Always super init() first
         return false; 
     }
+
+    // setClearColor({0.0f, 1.0f, 0.0f, 1.0f});
 
     // Always call addChild first
     cubeSprite_ = addChild(Sprite::create("cube.png"));

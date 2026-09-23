@@ -1,5 +1,6 @@
 #include "SDLGPUGraphics.h"
 #include <engine/log.h>
+#include <glm/glm.hpp>
 
 using namespace opendash::engine;
 

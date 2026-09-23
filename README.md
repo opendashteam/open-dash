@@ -15,9 +15,9 @@ auto* cube = addChild(Sprite::create("cube.png"));
 ```
 - Uhhhhh
 
-## TO COMPILE SHADERS
+<!-- ## TO COMPILE SHADERS
 its dis (run in da project root):
 ```
 glslc -fshader-stage=vertex src/game/shaders/sprite.vert.glsl -o src/game/shaders/sprite.vert.spv
 glslc -fshader-stage=fragment src/game/shaders/sprite.frag.glsl -o src/game/shaders/sprite.frag.spv
-```
+``` -->

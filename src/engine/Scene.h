@@ -13,8 +13,13 @@ public:
     CREATE_FUNC(Scene)
     virtual void render(Graphics* gfx);
     virtual void update(float dt);
+
+    void setClearColor(const Color4F& clearColor);
+    const Color4F& getClearColor() const;
 protected:
     bool init() override;
+private:
+    Color4F clearColor_ = {0.0f, 0.0f, 0.0f, 1.0f};
 };
 
 }

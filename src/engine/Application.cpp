@@ -53,7 +53,7 @@ void Application::run() {
         Graphics* gfx = platform::Window::getGraphics();
 
         Size windowSize;
-        gfx->beginDraw({1.0, 0.0, 0.0, 1.0}, windowSize);
+        gfx->beginDraw(currentScene_->getClearColor(), windowSize);
 
         projectionMatrix_ = glm::ortho(0.0f, windowSize.width, 0.0f, windowSize.height, -1.0f, 1.0f);
 

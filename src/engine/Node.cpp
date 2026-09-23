@@ -91,12 +91,12 @@ void Node::setScale(float x, float y) {
     setScale({x, y});
 }
 
-void Node::setRotation(float rotation)
+void Node::setRotation(float degrees)
 {
-    if (rotation == rotation_)
+    if (degrees == rotation_)
         return;
 
-	rotation_ = rotation;
+	rotation_ = degrees;
     markLocalTransformDirty();
 }
 
@@ -305,5 +305,46 @@ const glm::mat4& Node::getWorldTransform() {
     }
     return worldTransform_;
 }
+
+void Node::rotateBy(float deltaDegrees) {
+    setRotation(rotation_ + deltaDegrees);
+}
+
+void Node::moveBy(float deltaX, float deltaY) {
+    setPosition(position_.x + deltaX, position_.y + deltaY);
+}
+
+void Node::moveBy(Point deltaPosition) {
+    setPosition(position_ + deltaPosition);
+}
+
+void Node::moveByX(float deltaX) {
+    setPositionX(position_.x + deltaX);
+}
+
+void Node::moveByY(float deltaY) {
+    setPositionY(position_.x + deltaY);
+}
+
+void Node::scaleBy(float modX, float modY) {
+    setScale(scale_.x * modX, scale_.y * modY);
+}
+
+void Node::scaleByX(float modX) {
+    setScaleX(scale_.x * modX);
+}
+
+void Node::scaleByY(float modY) {
+    setScaleY(scale_.y * modY);
+}
+
+void Node::scaleBy(float mod) {
+    setScale(scale_ * mod);
+}
+
+void Node::scaleBy(Point mod) {
+    setScale(scale_ * mod);
+}
+
 
 }

@@ -1,11 +1,13 @@
 #pragma once
 
 #include "types.h"
-#include "Texture.hpp"
+#include "Texture.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace opendash::engine
 {
-
+// Abstract class
 class Graphics
 {
 public:
@@ -13,18 +15,12 @@ public:
         RGB_UBYTE,
         RGBA_UBYTE
     };
-
-public:
+    
     virtual bool beginDraw(const Color4F& clearColor, Size& windowSizeOut) = 0;
 
     virtual void finishDraw() = 0;
 
-    virtual InternalTexture createTexture(
-        u32 width,
-        u32 height,
-        TextureFormat format,
-        void* data
-    ) = 0;
+    virtual InternalTexture createTexture(u32 width, u32 height, TextureFormat format, void* data) = 0;
 
     virtual void destroyTexture(InternalTexture texture) = 0;
 
