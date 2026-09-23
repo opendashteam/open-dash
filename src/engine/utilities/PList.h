@@ -28,6 +28,13 @@ public:
     inline bool getBoolean() const { return booleanValue_; }
     inline std::map<std::string, PList*> getDict() const { return dictValue_; }
 
+    inline PList* getNode(const std::string& key) const {
+        auto it = dictValue_.find(key);
+        if (it != dictValue_.end())
+            return it->second;
+        return nullptr;
+    }
+
     std::string toString(u32 indent = 0) const;
 
     static std::unique_ptr<PList> load(const std::filesystem::path& relativePath);

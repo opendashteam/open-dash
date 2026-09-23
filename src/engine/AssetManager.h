@@ -4,6 +4,7 @@
 #include <filesystem>
 #include "core/types.h"
 #include "Texture.h"
+#include "core/SpriteFrame.h"
 
 namespace opendash::engine
 {
@@ -47,11 +48,18 @@ public:
     */
     void releaseAllTextures();
 
+    inline const std::unordered_map<std::string, SpriteFrame*>& getSpriteFrames() const {
+        return spriteFrames_;
+    }
+
 protected:
     virtual bool init();
 private:
     static AssetManager* instance_;
+
     std::unordered_map<std::filesystem::path, Texture*, PathHash> cachedTextures_;
+
+    std::unordered_map<std::string, SpriteFrame*> spriteFrames_;
 };
 
 }

@@ -16,10 +16,18 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    auto plist = PList::load("GJ_GameSheet03-uhd.plist");
+    if (AssetManager::get()->loadSpriteSheet("GJ_GameSheet03-uhd")) {
+        const auto& frames = AssetManager::get()->getSpriteFrames();
 
-    if (plist)
-        engine::log::info("\n{}", plist->toString());
+        for (const auto& [k, v] : frames) {
+            log::info("{}:", k);
+            log::info("  - rotated: {}", v->isRotated());
+            log::info("  - textureRect: {}", v->getTextureRect());
+            log::info("  - spriteOffset: {}", v->getSpriteOffset());
+            log::info("  - spriteSize: {}", v->getSpriteSize());
+            log::info("  - spriteSourceSize: {}", v->getSpriteSourceSize());
+        }
+    }
 
     app->setScene(std::move(scene));
     app->run();

@@ -2,6 +2,7 @@
 #include "core/Application.h"
 #include "../platform/Window.h"
 #include "utilities/log.h"
+#include "utilities/PList.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../third_party/stb_image.h"
@@ -98,14 +99,68 @@ Texture* AssetManager::getCachedTexture(const std::filesystem::path &relativePat
     return nullptr;
 }
 
+bool AssetManager::loadSpriteSheet(const std::filesystem::path& relativePath) {
+    auto texturePath = relativePath;
+    texturePath.replace_extension(".png");
+
+    if (!cacheTexture(texturePath))
+        return false;
+
+    Texture* texture = getCachedTexture(texturePath);
+
+    auto plistPath = relativePath;
+    plistPath.replace_extension(".plist");
+
+    std::unique_ptr<PList> plist = PList::load(plistPath);
+    if (!plist) {
+        log::err("{}: Failed to load .plist file", plistPath.string());
+        return false;
+    }
+
+    if (!plist->isDict()) {
+        log::err("{}: PList root node is not a dictionary", plistPath.string());
+        return false;
+    }
+
+    PList* frames = plist->getNode("frames");
+
+    if (!frames || !frames->isDict()) {
+        log::err("{}: Expected 'frames' node inside of PList root", plistPath.string());
+        return false;
+    }
+
+    std::vector<SpriteFrame*> spriteFrames;
+    spriteFrames.reserve(frames->getDict().size());
+
+    for (const auto& [key, value] : frames->getDict()) {
+        SpriteFrame* frame = SpriteFrame::loadFromPListNode(texture, key, value);
+        if (!frame) {
+            log::err("{}: Failed to parse sprite frame '{}'", plistPath.string(), key);
+            return false;
+        }
+        spriteFrames.push_back(frame);
+    }
+
+    for (auto frame : spriteFrames)
+        spriteFrames_[frame->getName()] = frame;
+
+    return true;
+}
+
 void AssetManager::releaseAllTextures()
 {
+    for (auto [key, value] : spriteFrames_)
+        delete value;
+
+    spriteFrames_.clear();
+
     Graphics* gfx = platform::Window::getGraphics();
 
-    for (auto& [path, tex] : cachedTextures_) {
-        gfx->destroyTexture(tex->getInternalObject());
-
+    for (auto& [path, texture] : cachedTextures_) {
+        gfx->destroyTexture(texture->getInternalObject());
+        delete texture;
     }
+
     cachedTextures_.clear();
 }
 

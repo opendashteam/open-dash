@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <cstdint>
+#include <fmt/format.h>
 
 namespace opendash::engine
 {
@@ -305,3 +306,34 @@ inline constexpr Size SizeZero(0.0f, 0.0f);
 inline constexpr Rect RectZero(PointZero, SizeZero);
 
 }
+
+// This allows you to use Point, etc.. in the logger and it will be automatically converted
+template <>
+class fmt::formatter<opendash::engine::Size> {
+public:
+    constexpr auto parse (format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (const opendash::engine::Size& value, Context& ctx) const {
+        return format_to(ctx.out(), "({}, {})", value.width, value.height);
+    }
+};
+
+template <>
+class fmt::formatter<opendash::engine::Point> {
+public:
+    constexpr auto parse (format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (const opendash::engine::Point& value, Context& ctx) const {
+        return format_to(ctx.out(), "({}, {})", value.x, value.y);
+    }
+};
+
+template <>
+class fmt::formatter<opendash::engine::Rect> {
+public:
+    constexpr auto parse (format_parse_context& ctx) { return ctx.begin(); }
+    template <typename Context>
+    constexpr auto format (const opendash::engine::Rect& value, Context& ctx) const {
+        return format_to(ctx.out(), "({}, {}, {}, {})", value.origin.x, value.origin.y, value.size.width, value.size.height);
+    }
+};
