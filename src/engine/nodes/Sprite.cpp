@@ -15,6 +15,25 @@ std::unique_ptr<Sprite> Sprite::create(const std::filesystem::path& path) {
     return ret;
 }
 
+std::unique_ptr<Sprite> Sprite::createWithFrame(SpriteFrame* spriteFrame) {
+    auto ret = std::make_unique<Sprite>();
+
+    if (!ret->initWithSpriteFrame(spriteFrame))
+        return nullptr;
+
+    return ret;
+}
+
+std::unique_ptr<Sprite> Sprite::createWithFrame(const std::string& spriteFrameName) {
+    SpriteFrame* spriteFrame = AssetManager::get()->getSpriteFrameByName(spriteFrameName);
+    if (!spriteFrame) {
+        log::err("Failed to initialize sprite, could not find sprite frame with name: {}", spriteFrameName);
+        return nullptr;
+    }
+
+    return createWithFrame(spriteFrame);
+}
+
 bool Sprite::initWithPath(const std::filesystem::path& path) {
     auto* am = AssetManager::get();
     if (!am->isTextureCached(path) && !am->cacheTexture(path)) {
@@ -31,12 +50,34 @@ bool Sprite::initWithPath(const std::filesystem::path& path) {
     return true;
 }
 
-void Sprite::draw(Graphics* gfx) {
-    auto* app = Application::get();
-    glm::mat4 contentScale = glm::scale(glm::mat4(1.0f), glm::vec3(getContentWidth(), getContentHeight(), 1.0f));
-    glm::mat4 transformation = app->getProjectionMatrix() * getWorldTransform() * contentScale;
+bool Sprite::initWithSpriteFrame(SpriteFrame* frame) {
+    assert(frame != nullptr);
 
-    gfx->drawSprite(texture_, transformation, {}, renderColor_);
+    spriteFrame_ = frame;
+    setContentSize(frame->getSpriteSourceSize());
+    return true;
+}
+
+void Sprite::draw(Graphics* gfx) {
+    assert(texture_ || spriteFrame_);
+
+    Size spriteSize = texture_ ? texture_->getSize() : spriteFrame_->getSpriteSize();
+
+    auto* app = Application::get();
+
+    glm::mat4 contentScale = glm::scale(glm::mat4(1.0f), glm::vec3(spriteSize.toGLM(), 1.0f));
+    glm::mat4 positionTransform = app->getProjectionMatrix() * getWorldTransform() * contentScale;
+
+    glm::mat3 textureTransform(1.0f);
+
+    Texture* texture = texture_;
+
+    if (spriteFrame_) {
+        texture = spriteFrame_->getTexture();
+        textureTransform = spriteFrame_->getTextureTransform();
+    }
+
+    gfx->drawSprite(texture, positionTransform, textureTransform, renderColor_);
 }
 
 bool Sprite::init() {

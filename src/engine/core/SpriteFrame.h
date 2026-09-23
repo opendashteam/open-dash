@@ -20,6 +20,8 @@ public:
     inline const Size& getSpriteSize() const { return spriteSize_; }
     inline const Size& getSpriteSourceSize() const { return spriteSourceSize_; }
 
+    const glm::mat3& getTextureTransform();
+
     static SpriteFrame* loadFromPListNode(Texture* texture, const std::string& name, PList* node);
 
 private:
@@ -32,6 +34,9 @@ private:
     Point spriteOffset_;
     Size spriteSize_;
     Size spriteSourceSize_;
+
+    bool textureTransformCreated = false;
+    glm::mat3 textureTransform;
 };
 
 };

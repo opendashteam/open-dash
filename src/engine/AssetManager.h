@@ -52,6 +52,13 @@ public:
         return spriteFrames_;
     }
 
+    inline SpriteFrame* getSpriteFrameByName(const std::string& name) const {
+        auto it = spriteFrames_.find(name);
+        if (it != spriteFrames_.end())
+            return it->second;
+        return nullptr;
+    }
+
 protected:
     virtual bool init();
 private:

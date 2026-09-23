@@ -3,6 +3,8 @@
 #include <filesystem>
 #include <cstdint>
 #include <fmt/format.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace opendash::engine
 {
@@ -185,6 +187,10 @@ struct Size {
     float getPerimeter() {
         return (width + height) * 2.0f;
     }
+
+    glm::vec2 toGLM() const {
+        return { width, height };
+    }
 };
 
 struct Point {
@@ -249,6 +255,10 @@ struct Point {
 
     void swap() {
         std::swap(x, y);
+    }
+
+    glm::vec2 toGLM() const {
+        return { x, y };
     }
 };
 

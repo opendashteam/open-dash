@@ -147,23 +147,34 @@ void SDLGPUGraphics::destroyTexture(InternalTexture raw)
     delete texture;
 }
 
+#define std140_vec2 alignas(8)  glm::vec2
+#define std140_vec3 alignas(16) glm::vec3
+#define std140_vec4 alignas(16) glm::vec4
+#define std140_mat2 alignas(8)  glm::mat2
+#define std140_mat3 alignas(16) glm::mat3x4
+#define std140_mat4 alignas(16) glm::mat4
+#define std140_bool alignas(4) bool
+
 struct VertexUBO {
-    glm::mat4 positionTransform;
-    Color4F color;
+    std140_mat4 positionTransform;
+    std140_mat3 textureTransform;
+    std140_vec4 color;
 };
 
 void SDLGPUGraphics::drawSprite(
-    InternalTexture raw,
-    glm::mat4 positionTransform,
-    const Rect& textureFrame, // texture frame rect is in pixels
-    const Color4F& color
+    engine::InternalTexture raw,
+    const glm::mat4& positionTransform,
+    const glm::mat3& textureTransform,
+    const engine::Color4F& color
 )
 {
     assert(commandBuffer_);
 
     auto texture = (InternalTextureContainer*)raw;
 
-    VertexUBO ubo = { positionTransform, color };
+    glm::vec4 colorVector = {color.r, color.g, color.b, color.a};
+
+    VertexUBO ubo = { positionTransform, textureTransform, colorVector };
 
     SDL_PushGPUVertexUniformData(commandBuffer_, 0, &ubo, sizeof(ubo));
     SDL_BindGPUGraphicsPipeline(renderPass_, defaultSpritePipeline_);

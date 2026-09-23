@@ -22,6 +22,8 @@ public:
     inline u32 getWidth() const { return width_; }
     inline u32 getHeight() const { return height_; }
 
+    inline Size getSize() const { return {(float)width_, (float)height_}; }
+
     inline InternalTexture getInternalObject() const { return internal_; }
 
 private:

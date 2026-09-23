@@ -32,8 +32,8 @@ public:
 
     virtual void drawSprite(
         engine::InternalTexture texture,
-        glm::mat4 positionTransform,
-        const engine::Rect& textureFrame, // texture frame rect is in pixels
+        const glm::mat4& positionTransform,
+        const glm::mat3& textureTransform,
         const engine::Color4F& color
     );
 

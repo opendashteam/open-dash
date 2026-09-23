@@ -26,18 +26,18 @@ public:
 
     virtual void drawSprite(
         InternalTexture texture,
-        glm::mat4 positionTransform,
-        const Rect& textureFrame, // texture frame rect is in pixels
+        const glm::mat4& positionTransform,
+        const glm::mat3& textureTransform,
         const Color4F& color
     ) = 0;
 
     inline void drawSprite(
         Texture* texture,
-        glm::mat4 positionTransform,
-        const Rect& textureFrame, // texture frame rect is in pixels
+        const glm::mat4& positionTransform,
+        const glm::mat3& textureTransform,
         const Color4F& color
     ) {
-        drawSprite(texture->getInternalObject(), positionTransform, textureFrame, color);
+        drawSprite(texture->getInternalObject(), positionTransform, textureTransform, color);
     }
 };
 
