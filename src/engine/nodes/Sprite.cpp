@@ -1,8 +1,7 @@
 #include "Sprite.h"
 #include "../AssetManager.h"
-#include "../core/Application.h"
 #include "../utilities/log.h"
-
+#include "../core/Director.h"
 namespace opendash::engine
 {
 
@@ -63,10 +62,8 @@ void Sprite::draw(Graphics* gfx) {
 
     Size spriteSize = texture_ ? texture_->getSize() : spriteFrame_->getSpriteSize();
 
-    auto* app = Application::get();
-
     glm::mat4 contentScale = glm::scale(glm::mat4(1.0f), glm::vec3(spriteSize.toGLM(), 1.0f));
-    glm::mat4 positionTransform = app->getProjectionMatrix() * getWorldTransform() * contentScale;
+    glm::mat4 positionTransform = Director::get()->getProjectionMatrix() * getWorldTransform() * contentScale;
 
     glm::mat3 textureTransform(1.0f);
 

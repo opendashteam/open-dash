@@ -34,6 +34,7 @@ public:
 
     // setters
     virtual void setPosition(const Point& position);
+    virtual void setPosition(const Size& sizeAsPosition);
     virtual void setPosition(float x, float y);
     virtual void setPositionX(float positionX);
     virtual void setPositionY(float positionY);

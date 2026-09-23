@@ -1,6 +1,6 @@
 #pragma once
 
-#include "engine.h"
+#include "engine.h" // Always prefer this over individual includes in game files (do not use in engine code!)
 
 using namespace opendash::engine;
 

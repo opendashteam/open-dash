@@ -48,19 +48,24 @@ void Node::setPosition(const Point& position)
     markLocalTransformDirty();
 }
 
+void Node::setPosition(const Size &sizeAsPosition)
+{
+    setPosition(sizeAsPosition.width, sizeAsPosition.height);
+}
+
 void Node::setPosition(float x, float y)
 {
-	setPosition({x, y});
+	setPosition(Point(x, y));
 }
 
 void Node::setPositionX(float positionX)
 {
-	setPosition({positionX, position_.y});
+	setPosition(Point(positionX, position_.y));
 }
 
 void Node::setPositionY(float positionY)
 {
-	setPosition({position_.x, positionY});
+	setPosition(Point(position_.x, positionY));
 }
 
 void Node::setScale(float scale)

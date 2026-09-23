@@ -6,7 +6,7 @@ namespace opendash
 
 void ExampleScene::update(float dt) {
     if (cubeSprite_) {
-        // cubeSprite_->rotateBy((180.0f / constants::player::kRotationDuration) * dt);
+        cubeSprite_->rotateBy((180.0f / constants::player::kRotationDuration) * dt);
     }
 }
 
@@ -19,7 +19,7 @@ bool ExampleScene::init() {
 
     // Always call addChild first
     cubeSprite_ = addChild(Sprite::createWithFrame("GJ_levelComplete_001.png"));
-    cubeSprite_->setPosition(1280.0/2.0, 720.0/2.0);
+    cubeSprite_->setPosition(Director::get()->getWindowSize() / 2);
     cubeSprite_->setScale(0.5f);
     
     return true;

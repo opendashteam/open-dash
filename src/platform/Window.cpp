@@ -65,7 +65,7 @@ void Window::pollEvents()
             shouldCloseWindow = true;
             continue;
         }
-        // later: pass other events (input, etc.) down to the current scene (or keep them here idk)
+        // later: pass other events (input, etc.) down to the Director
     }
 }
 

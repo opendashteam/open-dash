@@ -1,6 +1,5 @@
 #include "Application.h"
 #include "../../platform/Window.h"
-#include "../utilities/log.h"
 
 namespace opendash::engine
 {
@@ -28,51 +27,32 @@ bool Application::init(const std::string& title, int width, int height)
     if (!platform::Window::init(title, width, height))
         return false;
 
-    // claim ownership of certain stuff
+    // claim ownership of singleton managers and stuff
     assetManager_ = AssetManager::create();
     if (!assetManager_) return false;
+
+    director_ = Director::create();
+    if (!director_) return false;
+
+    director_->setWindowSize({
+        static_cast<float>(width),
+        static_cast<float>(height)
+    });
 
     return true;
 }
 
 void Application::run() {
-    double lastTime = platform::Window::getTime();
-
-    while (!platform::Window::shouldClose()) {
-        // compute delta time
-        double now = platform::Window::getTime();
-        float deltaTime = now - lastTime;
-        lastTime = now;
-
-        platform::Window::pollEvents();
-
-        Graphics* gfx = platform::Window::getGraphics();
-
-        Size windowSize;
-        if (!gfx->beginDraw(currentScene_->getClearColor(), windowSize)) {
-            continue;
-        }
-
-        projectionMatrix_ = glm::ortho(0.0f, windowSize.width, 0.0f, windowSize.height, -1.0f, 1.0f);
-
-        currentScene_->update(deltaTime);
-        currentScene_->render(gfx);
-
-        gfx->finishDraw();
-    }
+    director_->start();
 }
 
 void Application::quit() {
-    AssetManager::get()->releaseAllTextures();
+    director_->end();
     platform::Window::destroy();
 }
 
 void Application::setScene(std::unique_ptr<Scene> scene) {
-    currentScene_ = std::move(scene);
-}
-
-const glm::mat4 &Application::getProjectionMatrix() {
-    return projectionMatrix_;
+    if (director_) director_->setScene(scene);  
 }
 
 }

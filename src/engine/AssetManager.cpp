@@ -1,5 +1,4 @@
 #include "AssetManager.h"
-#include "core/Application.h"
 #include "../platform/Window.h"
 #include "utilities/log.h"
 #include "utilities/PList.h"
@@ -12,25 +11,8 @@
 namespace opendash::engine
 {
 
-AssetManager* AssetManager::instance_ = nullptr;
-
-AssetManager* AssetManager::get() {
-    return instance_;
-}
-
-std::unique_ptr<AssetManager> AssetManager::create() {
-    auto ret = std::make_unique<AssetManager>();
-
-    if (!ret->init()) {
-        return nullptr;
-    }
-
-    instance_ = ret.get();
-    return ret;
-}
-
 std::filesystem::path AssetManager::getFullPath(const std::filesystem::path& relative) {
-    std::filesystem::path texturePath = std::filesystem::path(kParentDirectory) / relative;
+    std::filesystem::path texturePath = std::filesystem::path(PARENT_DIRECTORY) / relative;
     return texturePath;
 }
 

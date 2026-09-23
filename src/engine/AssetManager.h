@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <filesystem>
 #include "core/types.h"
+#include "core/Singleton.h"
 #include "Texture.h"
 #include "core/SpriteFrame.h"
 
@@ -13,22 +14,14 @@ namespace opendash::engine
     Singleton class that handles loading/releasing assets. Use to preload
     textures and sounds on the loading screen.
 */
-class AssetManager {
+class AssetManager : public Singleton<AssetManager> {
+    friend class Singleton<AssetManager>;
 public:
-    static constexpr const char* kParentDirectory = "assets/";
-
-    static AssetManager* get();
-    static std::unique_ptr<AssetManager> create();
+    static constexpr const char* PARENT_DIRECTORY = "assets/";
 
     std::filesystem::path getFullPath(const std::filesystem::path& relative);
-
-    bool readFileAsString(
-        const std::filesystem::path& relativePath,
-        std::string& outputString
-    );
-
+    bool readFileAsString(const std::filesystem::path& relativePath, std::string& outputString);
     bool cacheTexture(const std::filesystem::path& relativePath);
-
     bool isTextureCached(const std::filesystem::path& relativePath);
 
     /*
@@ -60,10 +53,8 @@ public:
     }
 
 protected:
-    virtual bool init();
+    bool init() override;
 private:
-    static AssetManager* instance_;
-
     std::unordered_map<std::filesystem::path, Texture*, PathHash> cachedTextures_;
 
     std::unordered_map<std::string, SpriteFrame*> spriteFrames_;
