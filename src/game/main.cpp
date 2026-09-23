@@ -1,4 +1,4 @@
-#include "TestScene.h"
+#include "ExampleScene.h"
 
 using namespace opendash;
 
@@ -9,7 +9,7 @@ int main(int argc, char* argv[]) {
     if (!app)
         return 1;
 
-    auto scene = TestScene::create();
+    auto scene = ExampleScene::create();
     if (!scene) {
         return 1;
     }

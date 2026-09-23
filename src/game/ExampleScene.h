@@ -7,9 +7,9 @@ using namespace opendash::engine;
 namespace opendash
 {
 
-class TestScene : public engine::Scene {
+class ExampleScene : public engine::Scene {
 public:
-    CREATE_FUNC(TestScene)
+    CREATE_FUNC(ExampleScene)
     void update(float dt) override;
 protected:
     virtual bool init() override;

@@ -1,16 +1,16 @@
-#include "TestScene.h"
+#include "ExampleScene.h"
 #include "constants.h"
 
 namespace opendash
 {
 
-void TestScene::update(float dt) {
+void ExampleScene::update(float dt) {
     if (cubeSprite_) {
         cubeSprite_->rotateBy((180.0f / constants::player::kRotationDuration) * dt);
     }
 }
 
-bool TestScene::init() {
+bool ExampleScene::init() {
     if (!Scene::init()) { // Always super init() first
         return false; 
     }
