@@ -14,7 +14,7 @@ public:
 protected:
     virtual bool init() override;
 private:
-    Sprite* cubeSprite_ = nullptr;
+    Sprite* exampleSprite_ = nullptr;
 };
 
 }
