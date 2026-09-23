@@ -6,5 +6,6 @@
 - Other sprite stuff
 - Sprite node destruction/removal from parent (and cleanup)
 - A TilingSprite class (useful for ground)
-- Z order system like cocos2d
+- Z order system like cocos2d (maybe)
+- A something something I forgot
 - More...

@@ -1,8 +1,5 @@
 # **Open Dash (beta)**
 
-## I still need to fix some stuff in todo.md
-No touching!
-
 ## Contribution
 - Make stuff
 - Make sure to run `CMake: Configure` when you add/remove a .cpp source file
