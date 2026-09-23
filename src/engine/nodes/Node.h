@@ -1,12 +1,12 @@
 #pragma once
 
-#include "types.h"
-#include "macros.h"
+#include "../core/types.h"
+#include "../core/macros.h"
 #include <vector>
 #include <memory>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "Graphics.h"
+#include "../core/Graphics.h"
 
 namespace opendash::engine
 {

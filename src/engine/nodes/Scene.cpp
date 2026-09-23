@@ -1,6 +1,6 @@
 #include "Scene.h"
-#include "types.h"
-#include "Application.h"
+#include "../core/types.h"
+#include "../core/Application.h"
 
 namespace opendash::engine
 {

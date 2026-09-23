@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "../engine/Graphics.h"
+#include "../engine/core/Graphics.h"
 
 namespace opendash::platform
 {

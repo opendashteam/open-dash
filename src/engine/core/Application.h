@@ -1,8 +1,8 @@
 #pragma once
 
 #include <memory>
-#include "AssetManager.h"
-#include "Scene.h"
+#include "../AssetManager.h"
+#include "../nodes/Scene.h"
 
 namespace opendash::engine
 {

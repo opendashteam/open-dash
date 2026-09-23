@@ -1,7 +1,7 @@
 #include "AssetManager.h"
-#include "Application.h"
-#include <platform/Window.h>
-#include "log.h"
+#include "core/Application.h"
+#include "../platform/Window.h"
+#include "utilities/log.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../third_party/stb_image.h"

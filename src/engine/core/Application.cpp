@@ -1,6 +1,6 @@
 #include "Application.h"
-#include <platform/Window.h>
-#include "log.h"
+#include "../../platform/Window.h"
+#include "../utilities/log.h"
 
 namespace opendash::engine
 {
