@@ -33,6 +33,7 @@ bool SDLGPUGraphics::beginDraw(const Color4F& clearColor, Size& windowSizeOut)
 
     if (!swapchainTexture_) {
         SDL_CancelGPUCommandBuffer(commandBuffer_);
+        commandBuffer_ = nullptr;
         return false;
     }
 
@@ -52,10 +53,12 @@ bool SDLGPUGraphics::beginDraw(const Color4F& clearColor, Size& windowSizeOut)
 void SDLGPUGraphics::finishDraw()
 {
     assert(commandBuffer_ != nullptr);
+    assert(renderPass_ != nullptr);
 
     SDL_EndGPURenderPass(renderPass_);
     SDL_SubmitGPUCommandBuffer(commandBuffer_);
     commandBuffer_ = nullptr;
+    renderPass_ = nullptr;
 }
 
 struct InternalTextureContainer {

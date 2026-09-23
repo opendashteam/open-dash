@@ -61,8 +61,8 @@ private:
 
     //// DRAW PASS VARIABLES ////
     SDL_GPUCommandBuffer* commandBuffer_ = nullptr;
-    SDL_GPUTexture* swapchainTexture_;
-    SDL_GPURenderPass* renderPass_;
+    SDL_GPUTexture* swapchainTexture_ = nullptr;
+    SDL_GPURenderPass* renderPass_ = nullptr;
 };
 
 }
