@@ -2,8 +2,7 @@
 
 #include <string>
 #include <map>
-#include <memory>
-#include <filesystem>
+#include "../core/types.h"
 
 typedef struct XMLNode XMLNode;
 
@@ -28,6 +27,8 @@ public:
     inline const std::string& getString() const { return stringValue_; }
     inline bool getBoolean() const { return booleanValue_; }
     inline std::map<std::string, PList*> getDict() const { return dictValue_; }
+
+    std::string toString(u32 indent = 0) const;
 
     static std::unique_ptr<PList> load(const std::filesystem::path& relativePath);
 

@@ -1,4 +1,6 @@
 #include "ExampleScene.h"
+#include "../engine/utilities/PList.h"
+#include "../engine/utilities/log.h"
 
 using namespace opendash;
 
@@ -13,6 +15,11 @@ int main(int argc, char* argv[]) {
     if (!scene) {
         return 1;
     }
+
+    auto plist = PList::load("GJ_GameSheet03-uhd.plist");
+
+    if (plist)
+        engine::log::info("\n{}", plist->toString());
 
     app->setScene(std::move(scene));
     app->run();

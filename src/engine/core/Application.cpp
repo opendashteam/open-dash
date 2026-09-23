@@ -38,10 +38,6 @@ bool Application::init(const std::string& title, int width, int height)
 void Application::run() {
     double lastTime = platform::Window::getTime();
 
-    AssetManager::get()->cacheTexture("cube.png");
-
-    Texture* texture = AssetManager::get()->getCachedTexture("cube.png");
-
     while (!platform::Window::shouldClose()) {
         // compute delta time
         double now = platform::Window::getTime();
