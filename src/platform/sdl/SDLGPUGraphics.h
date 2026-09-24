@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../engine/core/Graphics.h"
+#include "engine/core/Graphics.h"
 
 /*
     Because this header file includes SDL, it is important

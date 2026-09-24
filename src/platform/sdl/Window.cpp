@@ -1,4 +1,4 @@
-#include "Window.h"
+#include "../Window.h"
 #include "engine/utilities/log.h"
 #include <SDL3/SDL.h>
 #include "SDLGPUGraphics.h"
@@ -64,7 +64,15 @@ double Window::getTime() {
     return (double)(SDL_GetTicksNS() - startTick) / 1'000'000'000.0;
 }
 
-bool Window::handleEvent(const SDL_Event& event) {
+engine::Graphics* Window::getGraphics()
+{
+    return graphics;
+}
+
+bool windowHandleEvent(const SDL_Event& event) {
+    if (!window)
+        return false;
+
     switch (event.type)
     {
         case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
@@ -76,11 +84,6 @@ bool Window::handleEvent(const SDL_Event& event) {
             break;
     }
     return true;
-}
-
-engine::Graphics* Window::getGraphics()
-{
-    return graphics;
 }
 
 };

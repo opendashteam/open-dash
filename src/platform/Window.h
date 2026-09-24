@@ -4,8 +4,6 @@
 #include <functional>
 #include "engine/core/types.h"        // wherever Size lives; adjust the path
 
-union SDL_Event;                      // forward declaration, keeps SDL out of this header
-
 namespace opendash::engine { class Graphics; }
 
 namespace opendash::platform
@@ -20,9 +18,6 @@ public:
     static void destroy();
 
     static double getTime();
-
-    // returns false when the app should quit
-    static bool handleEvent(const SDL_Event& event);
 
     // called with the new size in pixels whenever it really changes
     static void setResizeCallback(ResizeCallback callback);

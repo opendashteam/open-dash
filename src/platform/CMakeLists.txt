@@ -18,8 +18,9 @@ if(
     FetchContent_MakeAvailable(SDL3_mixer)
 
     set(OPENDASH_PLATFORM_SOURCES
-        "${CMAKE_CURRENT_SOURCE_DIR}/Window.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/SDLGPUGraphics.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/sdl/main.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/sdl/Window.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/sdl/SDLGPUGraphics.cpp"
     )
 
     set(OPENDASH_PLATFORM_LIBRARIES
