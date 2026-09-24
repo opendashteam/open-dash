@@ -17,7 +17,9 @@ bool ExampleScene::init() {
 
     // setClearColor({0.0f, 1.0f, 0.0f, 1.0f});
 
-    // Always call addChild first 
+    // Always call addChild first when creating a node
+    // to not have to deal with a stale pointer after the 
+    // unique_ptr's move operation
     exampleSprite_ = addChild(Sprite::create("cube.png"));
     exampleSprite_->setPosition(Director::get()->getVisibleSize() / 2);
     
