@@ -34,7 +34,8 @@ public:
         engine::InternalTexture texture,
         const glm::mat4& positionTransform,
         const glm::mat3& textureTransform,
-        const engine::Color4F& color
+        const engine::Color4F& color,
+        const engine::TextureWrapParameters& wrapParams
     );
 
 public:

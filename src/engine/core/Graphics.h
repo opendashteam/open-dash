@@ -28,16 +28,18 @@ public:
         InternalTexture texture,
         const glm::mat4& positionTransform,
         const glm::mat3& textureTransform,
-        const Color4F& color
+        const Color4F& color,
+        const engine::TextureWrapParameters& wrapParams
     ) = 0;
 
     inline void drawSprite(
         Texture* texture,
         const glm::mat4& positionTransform,
         const glm::mat3& textureTransform,
-        const Color4F& color
+        const Color4F& color,
+        const engine::TextureWrapParameters& wrapParams
     ) {
-        drawSprite(texture->getInternalObject(), positionTransform, textureTransform, color);
+        drawSprite(texture->getInternalObject(), positionTransform, textureTransform, color, wrapParams);
     }
 };
 
