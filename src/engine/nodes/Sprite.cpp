@@ -58,7 +58,9 @@ bool Sprite::initWithSpriteFrame(SpriteFrame* frame) {
     assert(frame != nullptr);
 
     spriteFrame_ = frame;
+
     setupSizes(frame->getSpriteSourceSize(), frame->getSpriteSize());
+    internalSpriteTransform_ = frame->getPositionTransform();
 
     // sprite-specific defaults
     setAnchorPoint({0.5f, 0.5f});
@@ -69,7 +71,7 @@ bool Sprite::initWithSpriteFrame(SpriteFrame* frame) {
 void Sprite::draw(Graphics* gfx) {
     assert(texture_ || spriteFrame_);
 
-    glm::mat4 positionTransform = Director::get()->getProjectionMatrix() * getWorldTransform() * quadScale_;
+    glm::mat4 positionTransform = getWorldTransform() * internalSpriteTransform_;
     glm::mat3 textureTransform(1.0f);
 
     Texture* texture = texture_;
@@ -91,7 +93,7 @@ void Sprite::setupSizes(const Size &contentPixels, const Size &quadPixels)
     float inv = 1.0f / Director::get()->getContentScaleFactor();
 
     setContentSize(contentPixels.width * inv, contentPixels.height * inv);
-    quadScale_ = glm::scale(glm::mat4(1.0f), glm::vec3(quadPixels.width * inv, quadPixels.height * inv, 1.0f));
+    internalSpriteTransform_ = glm::scale(glm::mat4(1.0f), glm::vec3(quadPixels.width * inv, quadPixels.height * inv, 1.0f));
 }
 
 }

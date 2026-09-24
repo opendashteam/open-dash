@@ -50,7 +50,7 @@ bool AssetManager::cacheTexture(const std::filesystem::path& relativePath) {
 
     Graphics* gfx = platform::Window::getGraphics();
 
-    InternalTexture texture = gfx->createTexture(
+    InternalTexture texture = gfx->textureCreate(
         width,
         height,
         Graphics::TextureFormat::RGBA_UBYTE, // it only supports this lol
@@ -140,7 +140,7 @@ void AssetManager::releaseAllTextures()
     Graphics* gfx = platform::Window::getGraphics();
 
     for (auto& [path, texture] : cachedTextures_) {
-        gfx->destroyTexture(texture->getInternalObject());
+        gfx->textureDestroy(texture->getInternalObject());
         delete texture;
     }
 

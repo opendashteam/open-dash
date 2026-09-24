@@ -1,4 +1,5 @@
 #include "SpriteFrame.h"
+#include "Director.h"
 
 namespace opendash::engine
 {
@@ -59,9 +60,23 @@ static inline bool parseRect(const std::string& string, Rect& out) {
     return true;
 }
 
+const glm::mat4& SpriteFrame::getPositionTransform() {
+    if (positionTransformCreated_)
+        return positionTransform_;
+
+    float inv = 1.0f / Director::get()->getContentScaleFactor();
+
+    positionTransform_ = glm::scale(glm::mat4(1.0f), glm::vec3(spriteSourceSize_.toGLM() * inv, 1.0f));
+    positionTransformCreated_ = true;
+
+    // TODO: Factor in spriteOffset_ into the positionTransform_
+
+    return positionTransform_;
+}
+
 const glm::mat3& SpriteFrame::getTextureTransform() {
-    if (textureTransformCreated)
-        return textureTransform;
+    if (textureTransformCreated_)
+        return textureTransform_;
 
     auto mat = glm::identity<glm::mat3>();
 
@@ -90,10 +105,10 @@ const glm::mat3& SpriteFrame::getTextureTransform() {
     mat[1] = { up,         0.0f };
     mat[2] = { bottomLeft, 1.0f };
 
-    textureTransform = mat;
-    textureTransformCreated = true;
+    textureTransform_ = mat;
+    textureTransformCreated_ = true;
 
-    return textureTransform;
+    return textureTransform_;
 }
 
 SpriteFrame* SpriteFrame::loadFromPListNode(Texture* texture, const std::string& name, PList* node)

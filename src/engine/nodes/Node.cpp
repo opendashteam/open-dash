@@ -24,6 +24,8 @@ const std::vector<std::unique_ptr<Node>>& Node::getChildren() const
     return children_;
 }
 
+Node::~Node() {}
+
 void Node::draw(Graphics* gfx) {
     // override me
 }

@@ -1,18 +1,30 @@
 #include "SDLGPUGraphics.h"
 #include "engine/utilities/log.h"
 #include <glm/glm.hpp>
+#include <set>
+#include "../../../assets/shaders/common.h"
 
 using namespace opendash::engine;
+
+#define std140_vec2 alignas(8)  glm::vec2
+#define std140_vec3 alignas(16) glm::vec3
+#define std140_vec4 alignas(16) glm::vec4
+#define std140_mat2 alignas(8)  glm::mat2
+#define std140_mat3 alignas(16) glm::mat3x4
+#define std140_mat4 alignas(16) glm::mat4
+#define std140_bool alignas(4) bool
 
 namespace opendash::platform
 {
 
 SDLGPUGraphics::~SDLGPUGraphics()
 {
-    assert(numTexturesAllocated == 0);
+    assert(numTexturesAllocated_ == 0);
 
     if (defaultSpritePipeline_)
         SDL_ReleaseGPUGraphicsPipeline(device_, defaultSpritePipeline_);
+    if (spriteBatchPipeline_)
+        SDL_ReleaseGPUGraphicsPipeline(device_, spriteBatchPipeline_);
     if (quadVertexBuffer_)
         SDL_ReleaseGPUBuffer(device_, quadVertexBuffer_);
 
@@ -57,13 +69,18 @@ void SDLGPUGraphics::finishDraw()
     renderPass_ = nullptr;
 }
 
-struct InternalTextureContainer {
+struct TextureContainer {
     SDL_GPUTexture* texture;
     SDL_GPUSampler* sampler;
     u32 width, height;
 };
 
-InternalTexture SDLGPUGraphics::createTexture(
+void SDLGPUGraphics::setViewProjectionMatrix(const glm::mat4& viewProjection) {
+    assert(commandBuffer_ != nullptr);
+    SDL_PushGPUVertexUniformData(commandBuffer_, UNIFORM_SLOT_VIEW_PROJECTION, &viewProjection, sizeof(viewProjection));
+}
+
+InternalTexture SDLGPUGraphics::textureCreate(
     u32 width,
     u32 height,
     TextureFormat format,
@@ -85,20 +102,17 @@ InternalTexture SDLGPUGraphics::createTexture(
     if (!texture)
         return nullptr;
 
-    SDL_GPUTransferBufferCreateInfo bufferTransferInfo{};
-    bufferTransferInfo.size = width * height * 4;
-    bufferTransferInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-    SDL_GPUTransferBuffer* texTransfer = SDL_CreateGPUTransferBuffer(device_, &bufferTransferInfo);
-
-    void* texMapped = SDL_MapGPUTransferBuffer(device_, texTransfer, false);
-    SDL_memcpy(texMapped, data, width * height * 4);
-    SDL_UnmapGPUTransferBuffer(device_, texTransfer);
+    auto uploadBuffer = createGPUUploadBuffer(width * height * 4, data);   
+    if (!uploadBuffer) {
+        release(texture);
+        return nullptr;
+    }
 
     SDL_GPUCommandBuffer* uploadCmd = SDL_AcquireGPUCommandBuffer(device_);
     SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(uploadCmd);
 
     SDL_GPUTextureTransferInfo texTransferInfo{};
-    texTransferInfo.transfer_buffer = texTransfer;
+    texTransferInfo.transfer_buffer = uploadBuffer;
 
     SDL_GPUTextureRegion texRegion{};
     texRegion.texture = texture;
@@ -111,7 +125,7 @@ InternalTexture SDLGPUGraphics::createTexture(
     SDL_EndGPUCopyPass(copyPass);
     SDL_SubmitGPUCommandBuffer(uploadCmd);
 
-    SDL_ReleaseGPUTransferBuffer(device_, texTransfer);
+    release(uploadBuffer);
 
     SDL_GPUSamplerCreateInfo samplerInfo{};
     samplerInfo.min_filter = SDL_GPU_FILTER_LINEAR;
@@ -127,15 +141,15 @@ InternalTexture SDLGPUGraphics::createTexture(
         return nullptr;
     }
 
-    numTexturesAllocated++;
-    return (InternalTexture)new InternalTextureContainer { texture, sampler, width, height };
+    numTexturesAllocated_++;
+    return (InternalTexture)new TextureContainer { texture, sampler, width, height };
 }
 
-void SDLGPUGraphics::destroyTexture(InternalTexture raw)
+void SDLGPUGraphics::textureDestroy(InternalTexture raw)
 {
-    numTexturesAllocated--;
+    numTexturesAllocated_--;
 
-    auto texture = (InternalTextureContainer*)raw;
+    auto texture = (TextureContainer*)raw;
 
     SDL_ReleaseGPUSampler(device_, texture->sampler);
     SDL_ReleaseGPUTexture(device_, texture->texture);
@@ -143,15 +157,209 @@ void SDLGPUGraphics::destroyTexture(InternalTexture raw)
     delete texture;
 }
 
-#define std140_vec2 alignas(8)  glm::vec2
-#define std140_vec3 alignas(16) glm::vec3
-#define std140_vec4 alignas(16) glm::vec4
-#define std140_mat2 alignas(8)  glm::mat2
-#define std140_mat3 alignas(16) glm::mat3x4
-#define std140_mat4 alignas(16) glm::mat4
-#define std140_bool alignas(4) bool
+static const float quadVerticies[] = {
+    0.0f, 0.0f,
+    0.0f, 1.0f,
+    1.0f, 0.0f,
+    1.0f, 1.0f
+};
 
-struct VertexUBO {
+struct SpriteQuadVertex {
+    glm::vec2 position;
+    glm::vec2 texCoord;
+    glm::vec4 color;
+};
+
+using SpriteQuadVertexSet = SpriteQuadVertex[4];
+using SpriteQuadIndexSet  = u32[6];
+
+enum class SpriteBatchDirtyType { None, Set, Range };
+
+#define DIRTY_SPRITE_SET_MAX_SIZE 8
+
+struct SpriteBatchContainer {
+    u32 capacity = 0;
+    SpriteQuadVertexSet* vertexBufferMapped = nullptr;
+    SDL_GPUTransferBuffer* vertexUploadBuffer = nullptr;
+    SDL_GPUBuffer* vertexBuffer = nullptr;
+    SDL_GPUBuffer* indexBuffer = nullptr;
+
+    SpriteBatchDirtyType dirtyType = SpriteBatchDirtyType::None;
+    std::set<u32> dirtySpriteSet;
+    u32 dirtySpriteRangeStart;
+    u32 dirtySpriteRangeEnd;
+};
+
+engine::InternalSpriteBatch SDLGPUGraphics::spriteBatchCreate() {
+    return (engine::InternalSpriteBatch)new SpriteBatchContainer;
+}
+
+void SDLGPUGraphics::spriteBatchResize(engine::InternalSpriteBatch raw, engine::u32 capacity) {
+    auto batch = (SpriteBatchContainer*)raw;
+    if (capacity <= batch->capacity)
+        return;
+
+    auto newVertexBuffer = createGPUBuffer(sizeof(SpriteQuadVertexSet) * capacity, SDL_GPU_BUFFERUSAGE_VERTEX);
+    auto newIndexBuffer  = createGPUBuffer(sizeof(SpriteQuadIndexSet) * capacity,  SDL_GPU_BUFFERUSAGE_INDEX);
+
+    if (batch->capacity > 0) {
+        auto cbuf = acquireCommandBuffer();
+
+        copyBuffer(
+            cbuf,
+            batch->vertexBuffer,
+            newVertexBuffer,
+            sizeof(SpriteQuadVertexSet) * batch->capacity,
+            0, 0
+        );
+        copyBuffer(
+            cbuf,
+            batch->indexBuffer,
+            newIndexBuffer,
+            sizeof(SpriteQuadIndexSet) * batch->capacity,
+            0, 0
+        );
+
+        submit(cbuf);
+
+        unmapBuffer(batch->vertexUploadBuffer);
+        release(batch->vertexUploadBuffer);
+        release(batch->vertexBuffer);
+        release(batch->indexBuffer);
+    }
+
+    u32 newIndiciesSize = (capacity - batch->capacity) * sizeof(SpriteQuadIndexSet);
+    auto indexUploadBuffer = createGPUUploadBuffer(newIndiciesSize);
+    auto indicies = (SpriteQuadIndexSet*)mapBuffer(indexUploadBuffer);
+
+    auto indexPtr = indicies;
+    for (u32 i = batch->capacity; i < capacity; i++) {
+        u32 vertexIndex = i * 4;
+        (*indexPtr)[0] = vertexIndex + 0;
+        (*indexPtr)[1] = vertexIndex + 1;
+        (*indexPtr)[2] = vertexIndex + 2;
+        (*indexPtr)[3] = vertexIndex + 1;
+        (*indexPtr)[4] = vertexIndex + 3;
+        (*indexPtr)[5] = vertexIndex + 2;
+        indexPtr++;
+    }
+
+    unmapBuffer(indexUploadBuffer);
+    uploadBufferData(NULL, indexUploadBuffer, newIndexBuffer, newIndiciesSize, 0, batch->capacity * sizeof(SpriteQuadIndexSet));
+    release(indexUploadBuffer);
+
+    batch->vertexUploadBuffer = createGPUUploadBuffer(sizeof(SpriteQuadVertexSet) * capacity);
+    batch->vertexBufferMapped = (SpriteQuadVertexSet*)mapBuffer(batch->vertexUploadBuffer);
+    batch->vertexBuffer = newVertexBuffer;
+    batch->indexBuffer = newIndexBuffer;
+    batch->capacity = capacity;
+}
+
+void SDLGPUGraphics::spriteBatchSetSprite(
+    InternalSpriteBatch raw,
+    u32 spriteIndex,
+    const glm::mat4& positionTransform,
+    const glm::mat3& textureTransform,
+    const Color4F& color
+) {
+    auto batch = (SpriteBatchContainer*)raw;
+    if (spriteIndex >= batch->capacity)
+        return;
+
+    auto quad = batch->vertexBufferMapped + spriteIndex;
+
+    for (u32 i = 0; i < 4; i++) {
+        glm::vec2 pos = { quadVerticies[i * 2 + 0], quadVerticies[i * 2 + 1] };
+
+        (*quad)[i].color = { color.r, color.g, color.b, color.a };
+        (*quad)[i].position = glm::vec2(positionTransform * glm::vec4(pos, 0.0f, 1.0f));
+        (*quad)[i].texCoord = glm::vec2(textureTransform * glm::vec3(pos, 1.0f));
+    }
+
+    if (batch->dirtyType == SpriteBatchDirtyType::None) {
+        batch->dirtyType = SpriteBatchDirtyType::Set;
+        batch->dirtySpriteRangeStart = spriteIndex;
+        batch->dirtySpriteRangeEnd   = spriteIndex + 1;
+    } else {
+        batch->dirtySpriteRangeStart = std::min(batch->dirtySpriteRangeStart, spriteIndex);
+        batch->dirtySpriteRangeEnd   = std::max(batch->dirtySpriteRangeEnd,   spriteIndex + 1);
+    }
+
+    if (batch->dirtyType == SpriteBatchDirtyType::Set) {
+        if (batch->dirtySpriteSet.size() == DIRTY_SPRITE_SET_MAX_SIZE)
+            batch->dirtyType = SpriteBatchDirtyType::Range;
+        else
+            batch->dirtySpriteSet.insert(spriteIndex);
+    }
+}
+
+void SDLGPUGraphics::spriteBatchDestroy(engine::InternalSpriteBatch raw) {
+    auto batch = (SpriteBatchContainer*)raw;
+    if (batch->capacity == 0)
+        return;
+
+    unmapBuffer(batch->vertexUploadBuffer);
+    release(batch->vertexUploadBuffer);
+    release(batch->vertexBuffer);
+    release(batch->indexBuffer);
+}
+
+void SDLGPUGraphics::drawSpriteBatch(
+    InternalSpriteBatch raw,
+    InternalTexture rawTexture,
+    const glm::mat4& positionTransform,
+    u32 count
+) {
+    auto batch = (SpriteBatchContainer*)raw;
+    if (batch->capacity == 0)
+        return;
+
+    if (batch->dirtyType == SpriteBatchDirtyType::Set) {
+        auto cbuf = acquireCommandBuffer();
+
+        for (u32 index : batch->dirtySpriteSet) {
+            uploadBufferData(
+                cbuf,
+                batch->vertexUploadBuffer,
+                batch->vertexBuffer,
+                sizeof(SpriteQuadVertexSet),
+                sizeof(SpriteQuadVertexSet) * index
+            );
+        }
+
+        submit(cbuf);
+    } else if (batch->dirtyType == SpriteBatchDirtyType::Range) {
+        uploadBufferData(
+            nullptr,
+            batch->vertexUploadBuffer,
+            batch->vertexBuffer,
+            sizeof(SpriteQuadVertexSet) * (batch->dirtySpriteRangeEnd - batch->dirtySpriteRangeStart),
+            sizeof(SpriteQuadVertexSet) * batch->dirtySpriteRangeStart
+        );
+    }
+
+    auto texture = (TextureContainer*)rawTexture;
+
+    SDL_BindGPUGraphicsPipeline(renderPass_, spriteBatchPipeline_);
+
+    SDL_GPUBufferBinding vertexBinding{};
+    vertexBinding.buffer = batch->vertexBuffer;
+    SDL_GPUBufferBinding indexBinding{};
+    indexBinding.buffer = batch->indexBuffer;
+
+    SDL_GPUTextureSamplerBinding textureBinding{};
+    textureBinding.texture = texture->texture;
+    textureBinding.sampler = texture->sampler;
+    
+    SDL_PushGPUVertexUniformData(commandBuffer_, UNIFORM_SLOT_SPRITE_BATCH_PROPERTIES, &positionTransform, sizeof(positionTransform));
+
+    SDL_BindGPUVertexBuffers(renderPass_, 0, &vertexBinding, 1);
+    SDL_BindGPUIndexBuffer(renderPass_, &indexBinding, SDL_GPU_INDEXELEMENTSIZE_32BIT);
+    SDL_BindGPUFragmentSamplers(renderPass_, 0, &textureBinding, 1);
+    SDL_DrawGPUIndexedPrimitives(renderPass_, count * 6, 1, 0, 0, 0);
+}
+
+struct SpritePropertiesUBO {
     std140_mat4 positionTransform;
     std140_mat3 textureTransform;
     std140_vec4 color;
@@ -166,13 +374,13 @@ void SDLGPUGraphics::drawSprite(
 {
     assert(commandBuffer_);
 
-    auto texture = (InternalTextureContainer*)raw;
+    auto texture = (TextureContainer*)raw;
 
     glm::vec4 colorVector = {color.r, color.g, color.b, color.a};
 
-    VertexUBO ubo = { positionTransform, textureTransform, colorVector };
+    SpritePropertiesUBO ubo = { positionTransform, textureTransform, colorVector };
 
-    SDL_PushGPUVertexUniformData(commandBuffer_, 0, &ubo, sizeof(ubo));
+    SDL_PushGPUVertexUniformData(commandBuffer_, UNIFORM_SLOT_SPRITE_PROPERTIES, &ubo, sizeof(ubo));
     SDL_BindGPUGraphicsPipeline(renderPass_, defaultSpritePipeline_);
 
     SDL_GPUBufferBinding vertexBinding{};
@@ -216,13 +424,6 @@ SDLGPUGraphics* SDLGPUGraphics::create(SDL_Window* window)
 
     return graphics;
 }
-
-static const float quadVerticies[] = {
-    0.0f, 0.0f,
-    0.0f, 1.0f,
-    1.0f, 0.0f,
-    1.0f, 1.0f
-};
 
 bool SDLGPUGraphics::init()
 {
@@ -272,33 +473,51 @@ SDL_GPUShader* SDLGPUGraphics::loadShader(const char* path, SDL_GPUShaderStage s
         return nullptr;
     }
     SDL_free(code);
+
+    shaders_.push_back(shader);
     return shader;
 }
 
-bool SDLGPUGraphics::setupPipelines()
-{
-    SDL_GPUShader* vertexShader   = loadShader("assets/shaders/sprite.vert.spv", SDL_GPU_SHADERSTAGE_VERTEX,   0, 1);
-    SDL_GPUShader* fragmentShader = loadShader("assets/shaders/sprite.frag.spv", SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0);
-
-    if (!vertexShader || !fragmentShader) {
-        if (vertexShader)
-            SDL_ReleaseGPUShader(device_, vertexShader);
-        if (fragmentShader)
-            SDL_ReleaseGPUShader(device_, fragmentShader);
-        
-        return false;
+static u32 getVertexFormatType(SDL_GPUVertexElementFormat format) {
+    switch (format) {
+    case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT:  return sizeof(float) * 1;
+    case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2: return sizeof(float) * 2;
+    case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3: return sizeof(float) * 3;
+    case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4: return sizeof(float) * 4;
+    default:
+        assert(true || "vertex format unknown");
     }
+    return 0;
+}
+
+SDL_GPUGraphicsPipeline* SDLGPUGraphics::createGraphicsPipeline(
+    SDL_GPUPrimitiveType primitive,
+    const std::vector<VertexAttribute>& attributes,
+    SDL_GPUShader* vertexShader,
+    SDL_GPUShader* fragmentShader
+) {
+    u32 pitch = 0;
+    for (const auto& attrib : attributes)
+        pitch += getVertexFormatType(attrib.type);
 
     SDL_GPUVertexBufferDescription vertexBufferDesc{};
     vertexBufferDesc.slot = 0;
     vertexBufferDesc.input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX;
-    vertexBufferDesc.pitch = sizeof(float) * 2;
+    vertexBufferDesc.pitch = pitch;
 
-    SDL_GPUVertexAttribute attribute;
-    attribute.buffer_slot = 0;
-    attribute.location = 0;
-    attribute.format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2;
-    attribute.offset = 0;
+    u32 offset = 0;
+
+    std::vector<SDL_GPUVertexAttribute> rawAttributes;
+    for (const auto& attrib : attributes) {
+        rawAttributes.push_back({});
+        auto& raw = rawAttributes.back();
+        raw.buffer_slot = 0;
+        raw.location = attrib.location;
+        raw.format = attrib.type;
+        raw.offset = offset;
+
+        offset += getVertexFormatType(raw.format);
+    }
 
     SDL_GPUColorTargetDescription colorTarget{};
     colorTarget.format = SDL_GetGPUSwapchainTextureFormat(device_, window_);
@@ -313,61 +532,147 @@ bool SDLGPUGraphics::setupPipelines()
     SDL_GPUGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.vertex_shader = vertexShader;
     pipelineInfo.fragment_shader = fragmentShader;
-    pipelineInfo.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP;
+    pipelineInfo.primitive_type = primitive;
     pipelineInfo.vertex_input_state.num_vertex_buffers = 1;
     pipelineInfo.vertex_input_state.vertex_buffer_descriptions = &vertexBufferDesc;
-    pipelineInfo.vertex_input_state.num_vertex_attributes = 1;
-    pipelineInfo.vertex_input_state.vertex_attributes = &attribute;
+    pipelineInfo.vertex_input_state.num_vertex_attributes = rawAttributes.size();
+    pipelineInfo.vertex_input_state.vertex_attributes = rawAttributes.data();
     pipelineInfo.target_info.num_color_targets = 1;
     pipelineInfo.target_info.color_target_descriptions = &colorTarget;
 
-    defaultSpritePipeline_ = SDL_CreateGPUGraphicsPipeline(device_, &pipelineInfo);
-    if (!defaultSpritePipeline_)
+    SDL_GPUGraphicsPipeline* pipeline = SDL_CreateGPUGraphicsPipeline(device_, &pipelineInfo);
+    if (!pipeline)
         log::err("failed to create graphics pipeline: {}", SDL_GetError());
+    return pipeline;
+}
 
-    SDL_ReleaseGPUShader(device_, vertexShader);
-    SDL_ReleaseGPUShader(device_, fragmentShader);
+bool SDLGPUGraphics::setupPipelines()
+{
+    SDL_GPUShader* batchVertexShader  = loadShader("assets/shaders/spriteBatch.vert.spv", SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
+    SDL_GPUShader* spriteVertexShader = loadShader("assets/shaders/sprite.vert.spv",      SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
+    SDL_GPUShader* fragmentShader     = loadShader("assets/shaders/sprite.frag.spv",      SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0);
 
-    return defaultSpritePipeline_ != nullptr;
+    if (
+        !batchVertexShader ||
+        !spriteVertexShader ||
+        !fragmentShader
+    ) {
+        releaseAllShaders();
+        return false;
+    }
+
+    defaultSpritePipeline_ = createGraphicsPipeline(
+        SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP,
+        { {0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2} },
+        spriteVertexShader,
+        fragmentShader
+    );
+
+    spriteBatchPipeline_ = createGraphicsPipeline(
+        SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
+        {
+            {0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2},
+            {1, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2},
+            {2, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4},
+        },
+        batchVertexShader,
+        fragmentShader
+    );
+
+    releaseAllShaders();
+    return defaultSpritePipeline_ != nullptr || spriteBatchPipeline_ != nullptr;
+}
+
+SDL_GPUBuffer* SDLGPUGraphics::createGPUBuffer(engine::u32 size, SDL_GPUBufferUsageFlags usage) {
+    SDL_GPUBufferCreateInfo info{};
+    info.size = size;
+    info.usage = usage;
+    return SDL_CreateGPUBuffer(device_, &info);
+}
+
+SDL_GPUTransferBuffer* SDLGPUGraphics::createGPUUploadBuffer(engine::u32 size, void* data) {
+    SDL_GPUTransferBufferCreateInfo info{};
+    info.size = size;
+    info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+    SDL_GPUTransferBuffer* buffer = SDL_CreateGPUTransferBuffer(device_, &info);
+    if (!buffer)
+        return nullptr;
+
+    if (data) {
+        memcpy(SDL_MapGPUTransferBuffer(device_, buffer, false), data, size);
+        SDL_UnmapGPUTransferBuffer(device_, buffer);
+    }
+
+    return buffer;
+}
+
+void SDLGPUGraphics::uploadBufferData(
+    SDL_GPUCommandBuffer* cbuffer,
+    SDL_GPUTransferBuffer* src,
+    SDL_GPUBuffer* dst,
+    engine::u32 size,
+    engine::u32 srcOffset,
+    engine::u32 dstOffset
+) {
+    bool ownCBuffer = cbuffer == nullptr;
+    if (ownCBuffer)
+        cbuffer = acquireCommandBuffer();
+
+    SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(cbuffer);
+
+    SDL_GPUTransferBufferLocation location{};
+    location.transfer_buffer = src;
+    location.offset = srcOffset;
+    SDL_GPUBufferRegion region{};
+    region.buffer = dst;
+    region.size = size;
+    region.offset = dstOffset;
+    SDL_UploadToGPUBuffer(copyPass, &location, &region, false);
+    SDL_EndGPUCopyPass(copyPass);
+
+    if (ownCBuffer)
+        submit(cbuffer);
+}
+
+void SDLGPUGraphics::copyBuffer(
+    SDL_GPUCommandBuffer* cbuffer,
+    SDL_GPUBuffer* src,
+    SDL_GPUBuffer* dst,
+    engine::u32 size,
+    engine::u32 srcOffset,
+    engine::u32 dstOffset
+) {
+    bool ownCBuffer = cbuffer == nullptr;
+    if (ownCBuffer)
+        cbuffer = acquireCommandBuffer();
+
+    SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(cbuffer);
+    SDL_GPUBufferLocation srcLocation{};
+    srcLocation.buffer = src;
+    srcLocation.offset = srcOffset;
+    SDL_GPUBufferLocation dstLocation{};
+    dstLocation.buffer = dst;
+    dstLocation.offset = dstOffset;
+    SDL_CopyGPUBufferToBuffer(copyPass, &srcLocation, &dstLocation, size, false);
+    SDL_EndGPUCopyPass(copyPass);
+
+    if (ownCBuffer)
+        submit(cbuffer);
 }
 
 SDL_GPUBuffer* SDLGPUGraphics::createStaticGPUBuffer(u32 size, SDL_GPUBufferUsageFlags usage, void* data) {
-    SDL_GPUCommandBuffer* uploadCmd = SDL_AcquireGPUCommandBuffer(device_);
-    SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(uploadCmd);
+    SDL_GPUBuffer* buffer = createGPUBuffer(size, usage);
+    if (!buffer)
+        return nullptr;
 
-    SDL_GPUBufferCreateInfo bufferInfo{};
-    bufferInfo.size = size;
-    bufferInfo.usage = usage;
-    SDL_GPUBuffer* buffer = SDL_CreateGPUBuffer(device_, &bufferInfo);
-    if (!buffer) {
+    SDL_GPUTransferBuffer* uploadBuffer = createGPUUploadBuffer(size, data);
+    if (!uploadBuffer) {
         SDL_ReleaseGPUBuffer(device_, buffer);
         return nullptr;
     }
 
-    SDL_GPUTransferBufferCreateInfo vbTransferInfo{};
-    vbTransferInfo.size = size;
-    vbTransferInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-    SDL_GPUTransferBuffer* vbTransfer = SDL_CreateGPUTransferBuffer(device_, &vbTransferInfo);
-    if (!vbTransfer) {
-        SDL_ReleaseGPUBuffer(device_, buffer);
-        return nullptr;
-    }
-
-    void* vbMapped = SDL_MapGPUTransferBuffer(device_, vbTransfer, false);
-    SDL_memcpy(vbMapped, data, size);
-    SDL_UnmapGPUTransferBuffer(device_, vbTransfer);
-
-    SDL_GPUTransferBufferLocation vbLocation{};
-    vbLocation.transfer_buffer = vbTransfer;
-    SDL_GPUBufferRegion vbRegion{};
-    vbRegion.buffer = buffer;
-    vbRegion.size = size;
-
-    SDL_UploadToGPUBuffer(copyPass, &vbLocation, &vbRegion, false);
-    SDL_EndGPUCopyPass(copyPass);
-    SDL_SubmitGPUCommandBuffer(uploadCmd);
-    SDL_ReleaseGPUTransferBuffer(device_, vbTransfer);
-
+    uploadBufferData(NULL, uploadBuffer, buffer, size);
+    release(uploadBuffer);
     return buffer;
 }
 

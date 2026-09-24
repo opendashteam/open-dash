@@ -28,7 +28,7 @@ private:
     */
     Texture* texture_ = nullptr;
     SpriteFrame* spriteFrame_ = nullptr;
-    glm::mat4 quadScale_{1.0f}; // unit quad -> size in points
+    glm::mat4 internalSpriteTransform_{1.0f}; // unit quad -> size in points
 };
 
 }

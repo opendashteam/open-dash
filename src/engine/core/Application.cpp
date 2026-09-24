@@ -59,6 +59,8 @@ void Application::tick() {
 
 void Application::quit() {
     director_->end();
+    // Making sure director gets deleted before we finalize graphics
+    director_ = nullptr;
     platform::Window::destroy();
 }
 

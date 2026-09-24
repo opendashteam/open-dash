@@ -1,6 +1,7 @@
 #pragma once
 
 #include "engine.h" // Always prefer this over individual includes in game files (do not use in engine code!)
+#include "SpriteBatchTest.h"
 
 using namespace opendash::engine;
 
@@ -15,6 +16,7 @@ protected:
     virtual bool init() override;
 private:
     Sprite* exampleSprite_ = nullptr;
+    SpriteBatchTest* batchTest_ = nullptr;
     bool spriteMovingRight_ = true;
 };
 

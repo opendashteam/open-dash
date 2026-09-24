@@ -28,6 +28,8 @@ public:
         children_.push_back(std::move(child));
         return raw;
     }
+
+    virtual ~Node();
     
     virtual void draw(Graphics* gfx);
     virtual void visit(Graphics* gfx);

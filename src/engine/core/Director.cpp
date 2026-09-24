@@ -27,6 +27,8 @@ void Director::tick() {
     if (!gfx->beginDraw()) return;
 
     // projectionMatrix_ = glm::ortho(0.0f, windowSize.width, 0.0f, windowSize.height, -1.0f, 1.0f);
+
+    gfx->setViewProjectionMatrix(getProjectionMatrix());
     
     currentScene_->update(deltaTime_);
     currentScene_->render(gfx);
