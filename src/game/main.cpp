@@ -8,7 +8,7 @@ using namespace opendash;
 
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv) {
 
-    auto app = engine::Application::create("Open Dash", 1280, 720);
+    auto app = engine::Application::create("Open Dash", 1600, 900);
     if (!app) 
         return SDL_APP_FAILURE;
 

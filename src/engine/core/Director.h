@@ -18,18 +18,17 @@ public:
 
     // setters
     void setScene(std::unique_ptr<Scene>& scene);
-    void setResolutionPolicy(const ResolutionPolicy& policy);
     void setContentScaleFactor(float contentScaleFactor);
     void setDesignResolutionSize(const Size& designResolutionSize);
 
     // getters
     glm::mat4 getProjectionMatrix() const;
     Scene* getRunningScene() const;
-    const ResolutionPolicy& getResolutionPolicy() const;
     float getContentScaleFactor() const;
     const Size& getDesignResolutionSize() const;
     double getTime() const;
     float getDeltaTime() const;
+    float getScreenScaleFactorMax() const;
 
     /*
         Get the dimensions of the visible portion of
@@ -40,13 +39,15 @@ public:
     /*
         Get the base dimensions of the window in pixels.
     */
-    const Size& getWindowSize() const;
+    const Size& getFrameSize() const;
 
     // internal methods, do not call outside of the engine
     void start();
     void end();
     void setVisibleSize(const Size& visibleSize);
-    void setWindowSize(const Size& windowSize);
+    void setFrameSize(const Size& frameSize);
+    void updateScreenScale();
+    void onWindowResized(const Size& frameSize);
     
 protected:
     bool init() override;
@@ -58,14 +59,19 @@ private:
     std::unique_ptr<Scene> currentScene_ = nullptr;
 
     Size visibleSize_ = {0.0f, 0.0f};
-    Size windowSize_  = {0.0f, 0.0f};
+    Size frameSize_  = {0.0f, 0.0f};
     Size designResolutionSize_ = {0.0f, 0.0f};
 
     float contentScaleFactor_ = 1.0f;
-    ResolutionPolicy resolutionPolicy_ = ResolutionPolicy::ShowAll;
 
     double lastTime_ = 0.0;
     float deltaTime_ = 0.0f;
+
+    float screenScaleFactorW_   = 0.0f;
+    float screenScaleFactorH_   = 0.0f;
+    float screenScaleFactor_    = 0.0f;
+    float screenScaleFactorMax_ = 0.0f;
+    float screenScale_          = 0.0f;
 };
 
 }

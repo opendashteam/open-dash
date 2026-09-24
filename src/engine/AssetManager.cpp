@@ -1,4 +1,5 @@
 #include "AssetManager.h"
+#include "core/Graphics.h"
 #include "../platform/Window.h"
 #include "utilities/log.h"
 #include "utilities/PList.h"

@@ -34,12 +34,17 @@ bool Application::init(std::string_view title, int width, int height)
     director_ = Director::create();
     if (!director_) return false;
 
-    director_->setWindowSize({
+    director_->setFrameSize({
         static_cast<float>(width),
         static_cast<float>(height)
     });
 
     gameSetup();
+
+    platform::Window::setResizeCallback([this](float w, float h) {
+        director_->onWindowResized({w, h});
+    });
+    director_->onWindowResized(platform::Window::getPixelSize());
 
     return true;
 }
@@ -63,6 +68,7 @@ void Application::setScene(std::unique_ptr<Scene> scene) {
 
 void Application::gameSetup() { // Run game-specific setup code
 
+                                 // uhd for now
     director_->setContentScaleFactor(4.0f); // to be read from save file
     director_->setDesignResolutionSize({480.0f, 320.0f}); // GD's own size, do not change
     

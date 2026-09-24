@@ -31,6 +31,8 @@ protected:
     void draw(Graphics* gfx) override;
     bool init() override;
 private:
+    void setupSizes(const Size& contentPixels, const Size& quadPixels);
+
     /*
         If we are using a full texture, texture_ must contain it and spriteFrame_ must be nullptr
         If we are using a sprite frame, spriteFrame_ must contain it and texture_ must be nullptr
@@ -41,6 +43,8 @@ private:
     Color4F renderColor_ = {1.0f, 1.0f, 1.0f, 1.0f};
     Color3B color_ = {255, 255, 255};
     u8 opacity_ = 255;
+
+    glm::mat4 quadScale_{1.0f}; // unit quad -> size in points
 };
 
 }

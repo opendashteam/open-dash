@@ -16,7 +16,7 @@ public:
         RGBA_UBYTE
     };
     
-    virtual bool beginDraw(const Color4F& clearColor, Size& windowSizeOut) = 0;
+    virtual bool beginDraw() = 0;
 
     virtual void finishDraw() = 0;
 

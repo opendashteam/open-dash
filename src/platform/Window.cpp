@@ -10,7 +10,7 @@ namespace opendash::platform
 
 static SDL_Window* window;
 static u64 startTick = 0;
-
+static Window::ResizeCallback resizeCallback;
 static SDLGPUGraphics* graphics = nullptr;
 
 bool Window::init(std::string_view title, int width, int height)
@@ -18,7 +18,7 @@ bool Window::init(std::string_view title, int width, int height)
     SDL_Init(SDL_INIT_VIDEO);
 
     std::string titleString{title};
-    window = SDL_CreateWindow(titleString.c_str(), width, height, 0);
+    window = SDL_CreateWindow(titleString.c_str(), width, height, SDL_WINDOW_RESIZABLE);
     if (!window)
     {
         log::err("failed to create a SDL window");
@@ -44,6 +44,20 @@ void Window::destroy()
         SDL_DestroyWindow(window);
     graphics = nullptr;
     window = nullptr;
+    resizeCallback = nullptr;
+}
+
+void Window::setResizeCallback(ResizeCallback callback)
+{
+    resizeCallback = std::move(callback);
+}
+
+engine::Size Window::getPixelSize()
+{
+    int w = 0, h = 0;
+    if (window)
+        SDL_GetWindowSizeInPixels(window, &w, &h);
+    return { static_cast<float>(w), static_cast<float>(h) };
 }
 
 double Window::getTime() {
@@ -51,10 +65,16 @@ double Window::getTime() {
 }
 
 bool Window::handleEvent(const SDL_Event& event) {
-    if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
-        return false;
+    switch (event.type)
+    {
+        case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+            return false;
 
-    // later: forward input to the Director
+        case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+            if (resizeCallback)
+                resizeCallback(static_cast<float>(event.window.data1), static_cast<float>(event.window.data2));
+            break;
+    }
     return true;
 }
 

@@ -1,6 +1,5 @@
 #include "Scene.h"
 #include "../core/types.h"
-#include "../core/Application.h"
 
 namespace opendash::engine
 {
@@ -19,6 +18,12 @@ void Scene::render(Graphics* gfx) {
 
 void Scene::update(float dt) {
     // override me
+}
+
+void Scene::onViewResized() {
+    // override me
+
+    // E.g. UI layout refresh on window resize
 }
 
 void Scene::setClearColor(const Color4F &clearColor) {

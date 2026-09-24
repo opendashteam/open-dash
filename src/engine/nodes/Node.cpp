@@ -328,7 +328,7 @@ void Node::moveByX(float deltaX) {
 }
 
 void Node::moveByY(float deltaY) {
-    setPositionY(position_.x + deltaY);
+    setPositionY(position_.y + deltaY);
 }
 
 void Node::scaleBy(float modX, float modY) {

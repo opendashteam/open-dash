@@ -24,11 +24,9 @@ void Director::tick() {
 
     Graphics* gfx = platform::Window::getGraphics();
 
-    Size windowSize;
-    if (!gfx->beginDraw(currentScene_->getClearColor(), windowSize))
-        return;
+    if (!gfx->beginDraw()) return;
 
-    projectionMatrix_ = glm::ortho(0.0f, windowSize.width, 0.0f, windowSize.height, -1.0f, 1.0f);
+    // projectionMatrix_ = glm::ortho(0.0f, windowSize.width, 0.0f, windowSize.height, -1.0f, 1.0f);
     
     currentScene_->update(deltaTime_);
     currentScene_->render(gfx);
@@ -40,16 +38,13 @@ void Director::setScene(std::unique_ptr<Scene> &scene) {
   currentScene_ = std::move(scene);
 }
 
-void Director::setResolutionPolicy(const ResolutionPolicy &policy) {
-    resolutionPolicy_ = policy;
-}
-
 void Director::setContentScaleFactor(float contentScaleFactor) {
     contentScaleFactor_ = contentScaleFactor;
 }
 
 void Director::setDesignResolutionSize(const Size &designResolutionSize) {
     designResolutionSize_ = designResolutionSize;
+    updateScreenScale();
 }
 
 glm::mat4 Director::getProjectionMatrix() const {
@@ -58,10 +53,6 @@ glm::mat4 Director::getProjectionMatrix() const {
 
 Scene* Director::getRunningScene() const {
     return currentScene_.get();
-}
-
-const ResolutionPolicy &Director::getResolutionPolicy() const {
-    return resolutionPolicy_;
 }
 
 float Director::getContentScaleFactor() const {
@@ -80,12 +71,17 @@ float Director::getDeltaTime() const {
     return deltaTime_;
 }
 
+float Director::getScreenScaleFactorMax() const
+{
+    return screenScaleFactorMax_;
+}
+
 const Size& Director::getVisibleSize() const {
     return visibleSize_;
 }
 
-const Size& Director::getWindowSize() const {
-    return windowSize_;
+const Size& Director::getFrameSize() const {
+    return frameSize_;
 }
 
 bool Director::init() {
@@ -96,8 +92,48 @@ void Director::setVisibleSize(const Size &visibleSize) {
     visibleSize_ = visibleSize;
 }
 
-void Director::setWindowSize(const Size &windowSize) {
-    windowSize_ = windowSize;
+void Director::setFrameSize(const Size &frameSize) {
+    frameSize_ = frameSize;
+}
+
+void Director::updateScreenScale()
+{
+    if (frameSize_.width <= 0.0f || frameSize_.height <= 0.0f) return;
+    if (designResolutionSize_.width <= 0.0f || designResolutionSize_.height <= 0.0f) return;
+
+    const Size& design = designResolutionSize_;
+    const float scaleX = frameSize_.width  / design.width;
+    const float scaleY = frameSize_.height / design.height;
+
+    if (scaleY <= scaleX) { // ResolutionPolicy Fixed Height
+        screenScale_ = scaleY;
+        visibleSize_ = { frameSize_.width / scaleY, design.height };
+    }
+    else { // ResolutionPolicy Fixed Width
+        screenScale_ = scaleX;
+        visibleSize_ = { design.width, frameSize_.height / scaleX };
+    }
+
+    screenScaleFactorW_ = visibleSize_.width  / design.width;
+    screenScaleFactorH_ = visibleSize_.height / design.height;
+    screenScaleFactor_    = std::min(screenScaleFactorW_, screenScaleFactorH_);
+    screenScaleFactorMax_ = std::max(screenScaleFactorW_, screenScaleFactorH_);
+
+    projectionMatrix_ = glm::ortho(0.0f, visibleSize_.width, 0.0f, visibleSize_.height, -1.0f, 1.0f);
+}
+
+void Director::onWindowResized(const Size &frameSize)
+{
+    if (frameSize.width <= 0.0f || frameSize.height <= 0.0f)
+        return; // minimized
+    if (frameSize.width == frameSize_.width && frameSize.height == frameSize_.height)
+        return;
+
+    setFrameSize(frameSize);
+    updateScreenScale();
+
+    if (currentScene_)
+        currentScene_->onViewResized();
 }
 
 }

@@ -17,7 +17,7 @@ class SDLGPUGraphics : public engine::Graphics
 public:
     ~SDLGPUGraphics();
 
-    virtual bool beginDraw(const engine::Color4F& clearColor, engine::Size& windowSizeOut);
+    virtual bool beginDraw();
 
     virtual void finishDraw();
 
@@ -59,7 +59,7 @@ private:
 
     SDL_GPUBuffer* quadVertexBuffer_ = nullptr;
 
-    //// DRAW PASS VARIABLES ////
+    // DRAW PASS VARIABLES //
     SDL_GPUCommandBuffer* commandBuffer_ = nullptr;
     SDL_GPUTexture* swapchainTexture_ = nullptr;
     SDL_GPURenderPass* renderPass_ = nullptr;

@@ -20,7 +20,7 @@ SDLGPUGraphics::~SDLGPUGraphics()
     SDL_DestroyGPUDevice(device_);
 }
 
-bool SDLGPUGraphics::beginDraw(const Color4F& clearColor, Size& windowSizeOut)
+bool SDLGPUGraphics::beginDraw()
 {
     assert(commandBuffer_ == nullptr);
 
@@ -28,8 +28,6 @@ bool SDLGPUGraphics::beginDraw(const Color4F& clearColor, Size& windowSizeOut)
 
     u32 w, h;
     SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer_, window_, &swapchainTexture_, &w, &h);
-
-    windowSizeOut = {(float)w, (float)h};
 
     if (!swapchainTexture_) {
         SDL_CancelGPUCommandBuffer(commandBuffer_);
@@ -41,9 +39,7 @@ bool SDLGPUGraphics::beginDraw(const Color4F& clearColor, Size& windowSizeOut)
     colorTargetInfo.texture = swapchainTexture_;
     colorTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
     colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
-
-    const auto& cc = clearColor;
-    colorTargetInfo.clear_color = {cc.r, cc.g, cc.b, cc.a};
+    colorTargetInfo.clear_color = {0.0f, 0.0f, 0.0f, 1.0f};
 
     renderPass_ = SDL_BeginGPURenderPass(commandBuffer_, &colorTargetInfo, 1, nullptr);
     
@@ -196,13 +192,15 @@ SDLGPUGraphics* SDLGPUGraphics::create(SDL_Window* window)
     SDL_GPUDevice* device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, nullptr);
     if (!device)
     {
-        log::err("failed to create SDL_GPUDevice");
+        log::err("failed to create SDL_GPUDevice: {}", SDL_GetError());
+        SDL_DestroyGPUDevice(device);
         return nullptr;
     }
 
     if (!SDL_ClaimWindowForGPUDevice(device, window))
     {
-        log::err("failed to claim window for gpu device");
+        log::err("failed to claim window for gpu device: {}", SDL_GetError());
+        SDL_DestroyGPUDevice(device);
         return nullptr;
     }
 

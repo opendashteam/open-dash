@@ -107,7 +107,7 @@ private:
     Point position_{0.0f, 0.0f};
     Point scale_{1.0f, 1.0f};
     float rotation_ = 0.0f;
-    Point anchorPoint_{0.5f, 0.5f};
+    Point anchorPoint_{0.0f, 0.0f};
     Point skew_{0.0f, 0.0f};
     Size contentSize_{0.0f, 0.0f};
 

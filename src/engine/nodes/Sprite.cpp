@@ -45,7 +45,12 @@ bool Sprite::initWithPath(const std::filesystem::path& path) {
         return false;
     }
 
-    setContentSize(static_cast<float>(texture_->getWidth()), static_cast<float>(texture_->getHeight()));
+    Size pixelSize = texture_->getSize();
+    setupSizes(pixelSize, pixelSize);
+
+    // sprite-specific defaults
+    setAnchorPoint({0.5f, 0.5f});
+
     return true;
 }
 
@@ -53,18 +58,18 @@ bool Sprite::initWithSpriteFrame(SpriteFrame* frame) {
     assert(frame != nullptr);
 
     spriteFrame_ = frame;
-    setContentSize(frame->getSpriteSourceSize());
+    setupSizes(frame->getSpriteSourceSize(), frame->getSpriteSize());
+
+    // sprite-specific defaults
+    setAnchorPoint({0.5f, 0.5f});
+
     return true;
 }
 
 void Sprite::draw(Graphics* gfx) {
     assert(texture_ || spriteFrame_);
 
-    Size spriteSize = texture_ ? texture_->getSize() : spriteFrame_->getSpriteSize();
-
-    glm::mat4 contentScale = glm::scale(glm::mat4(1.0f), glm::vec3(spriteSize.toGLM(), 1.0f));
-    glm::mat4 positionTransform = Director::get()->getProjectionMatrix() * getWorldTransform() * contentScale;
-
+    glm::mat4 positionTransform = Director::get()->getProjectionMatrix() * getWorldTransform() * quadScale_;
     glm::mat3 textureTransform(1.0f);
 
     Texture* texture = texture_;
@@ -79,6 +84,14 @@ void Sprite::draw(Graphics* gfx) {
 
 bool Sprite::init() {
     return Node::init();
+}
+
+void Sprite::setupSizes(const Size &contentPixels, const Size &quadPixels)
+{
+    float inv = 1.0f / Director::get()->getContentScaleFactor();
+
+    setContentSize(contentPixels.width * inv, contentPixels.height * inv);
+    quadScale_ = glm::scale(glm::mat4(1.0f), glm::vec3(quadPixels.width * inv, quadPixels.height * inv, 1.0f));
 }
 
 void Sprite::setColor(const Color3B &color) {

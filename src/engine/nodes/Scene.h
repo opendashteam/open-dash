@@ -13,6 +13,7 @@ public:
     CREATE_FUNC(Scene)
     virtual void render(Graphics* gfx);
     virtual void update(float dt);
+    virtual void onViewResized();
 
     void setClearColor(const Color4F& clearColor);
     const Color4F& getClearColor() const;

@@ -1,24 +1,36 @@
 #pragma once
 
 #include <string_view>
-#include "../engine/core/Graphics.h"
+#include <functional>
+#include "engine/core/types.h"        // wherever Size lives; adjust the path
 
-union SDL_Event; // Forward decl
+union SDL_Event;                      // forward declaration, keeps SDL out of this header
+
+namespace opendash::engine { class Graphics; }
+
 namespace opendash::platform
 {
 
-class Window {
+class Window
+{
 public:
-    static bool init(std::string_view title, int width, int height);
+    using ResizeCallback = std::function<void(float width, float height)>;
 
+    static bool init(std::string_view title, int width, int height);
     static void destroy();
 
-    // in seconds
     static double getTime();
 
+    // returns false when the app should quit
     static bool handleEvent(const SDL_Event& event);
+
+    // called with the new size in pixels whenever it really changes
+    static void setResizeCallback(ResizeCallback callback);
+
+    // current drawable size in pixels (use this for the initial size)
+    static engine::Size getPixelSize();
 
     static engine::Graphics* getGraphics();
 };
 
-};
+}
