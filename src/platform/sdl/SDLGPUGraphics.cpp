@@ -369,7 +369,8 @@ void SDLGPUGraphics::drawSprite(
     engine::InternalTexture raw,
     const glm::mat4& positionTransform,
     const glm::mat3& textureTransform,
-    const engine::Color4F& color
+    const engine::Color4F& color,
+    const engine::TextureWrapParameters& wrapParams
 )
 {
     assert(commandBuffer_);

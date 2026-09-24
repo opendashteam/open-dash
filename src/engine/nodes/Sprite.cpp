@@ -5,6 +5,11 @@
 namespace opendash::engine
 {
 
+static constexpr TextureWrapParameters sharedSpriteWrapParameters {
+    WrapMode::Clamp,
+    WrapMode::Clamp
+};
+
 std::unique_ptr<Sprite> Sprite::create(const std::filesystem::path& path) {
     auto ret = std::make_unique<Sprite>();
 
@@ -81,7 +86,7 @@ void Sprite::draw(Graphics* gfx) {
         textureTransform = spriteFrame_->getTextureTransform();
     }
 
-    gfx->drawSprite(texture, positionTransform, textureTransform, renderColor_);
+    gfx->drawSprite(texture, positionTransform, textureTransform, renderColor_, sharedSpriteWrapParameters);
 }
 
 bool Sprite::init() {

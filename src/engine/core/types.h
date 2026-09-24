@@ -315,12 +315,22 @@ inline constexpr Point PointZero(0.0f, 0.0f);
 inline constexpr Size SizeZero(0.0f, 0.0f);
 inline constexpr Rect RectZero(PointZero, SizeZero);
 
+// Unused
 enum class ResolutionPolicy {
     ExactFit,    // Stretch to fit the whole image on the display
     NoBorder,    // Scale to fill the whole display, may cause cropping
     ShowAll,     // Scale to fill while ensuring the entire design is visible, causes letterboxing
     FixedHeight, // Keep the design height fixed, adjust the width to the display
     FixedWidth   // Keep the design width fixed, adjust the height to the display
+};
+
+enum class WrapMode {
+    Repeat, Clamp, MirroredRepeat
+};
+
+struct TextureWrapParameters {
+    WrapMode u;
+    WrapMode v;
 };
 
 }
