@@ -239,6 +239,11 @@ bool SDLGPUGraphics::init()
         return false;
     }
 
+    // Disable v-sync
+    if (SDL_WindowSupportsGPUPresentMode(device_, window_, SDL_GPU_PRESENTMODE_MAILBOX)) {
+        SDL_SetGPUSwapchainParameters(device_, window_, SDL_GPU_SWAPCHAINCOMPOSITION_SDR, SDL_GPU_PRESENTMODE_MAILBOX);
+    }
+
     return true;
 }
 
@@ -265,6 +270,7 @@ SDL_GPUShader* SDLGPUGraphics::loadShader(const char* path, SDL_GPUShaderStage s
     if (!shader)
     {
         log::err("failed to compile shader {}:\n{}", path, SDL_GetError());
+        SDL_free(code);
         return nullptr;
     }
     SDL_free(code);
@@ -335,8 +341,10 @@ SDL_GPUBuffer* SDLGPUGraphics::createStaticGPUBuffer(u32 size, SDL_GPUBufferUsag
     bufferInfo.size = size;
     bufferInfo.usage = usage;
     SDL_GPUBuffer* buffer = SDL_CreateGPUBuffer(device_, &bufferInfo);
-    if (!buffer)
+    if (!buffer) {
+        SDL_ReleaseGPUBuffer(device_, buffer);
         return nullptr;
+    }
 
     SDL_GPUTransferBufferCreateInfo vbTransferInfo{};
     vbTransferInfo.size = size;

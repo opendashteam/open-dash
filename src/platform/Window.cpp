@@ -9,16 +9,16 @@ namespace opendash::platform
 {
 
 static SDL_Window* window;
-static bool shouldCloseWindow = false;
 static u64 startTick = 0;
 
 static SDLGPUGraphics* graphics = nullptr;
 
-bool Window::init(const std::string& title, int width, int height)
+bool Window::init(std::string_view title, int width, int height)
 {
     SDL_Init(SDL_INIT_VIDEO);
 
-    window = SDL_CreateWindow(title.c_str(), width, height, 0);
+    std::string titleString{title};
+    window = SDL_CreateWindow(titleString.c_str(), width, height, 0);
     if (!window)
     {
         log::err("failed to create a SDL window");
@@ -50,23 +50,12 @@ double Window::getTime() {
     return (double)(SDL_GetTicksNS() - startTick) / 1'000'000'000.0;
 }
 
-bool Window::shouldClose()
-{
-    return shouldCloseWindow;
-}
+bool Window::handleEvent(const SDL_Event& event) {
+    if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
+        return false;
 
-void Window::pollEvents()
-{
-    SDL_Event event;
-    while (SDL_PollEvent(&event))
-    {
-        if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
-        {
-            shouldCloseWindow = true;
-            continue;
-        }
-        // later: pass other events (input, etc.) down to the Director
-    }
+    // later: forward input to the Director
+    return true;
 }
 
 engine::Graphics* Window::getGraphics()

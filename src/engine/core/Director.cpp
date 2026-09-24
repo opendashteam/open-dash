@@ -1,43 +1,55 @@
 #include "Director.h"
 #include "../../platform/Window.h"
 #include "../AssetManager.h"
-
+#include <SDL3/SDL.h>
 namespace opendash::engine
 {
 
 void Director::start() {
-    double lastTime = platform::Window::getTime();
-
-    while (!platform::Window::shouldClose()) {
-        // compute delta time
-        double now = platform::Window::getTime();
-        float deltaTime = now - lastTime;
-        lastTime = now;
-
-        platform::Window::pollEvents();
-
-        Graphics* gfx = platform::Window::getGraphics();
-
-        Size windowSize;
-        if (!gfx->beginDraw(currentScene_->getClearColor(), windowSize)) {
-            continue;
-        }
-
-        projectionMatrix_ = glm::ortho(0.0f, windowSize.width, 0.0f, windowSize.height, -1.0f, 1.0f);
-
-        currentScene_->update(deltaTime);
-        currentScene_->render(gfx);
-
-        gfx->finishDraw();
-    }
+    lastTime_ = getTime();
 }
 
 void Director::end() {
     AssetManager::get()->releaseAllTextures();
 }
 
-void Director::setScene(std::unique_ptr<Scene>& scene) {
-    currentScene_ = std::move(scene);
+void Director::computeDeltaTime() {
+    double now = getTime();
+    deltaTime_ = now - lastTime_;
+    lastTime_ = now;
+}
+
+void Director::tick() {
+    computeDeltaTime();
+
+    Graphics* gfx = platform::Window::getGraphics();
+
+    Size windowSize;
+    if (!gfx->beginDraw(currentScene_->getClearColor(), windowSize))
+        return;
+
+    projectionMatrix_ = glm::ortho(0.0f, windowSize.width, 0.0f, windowSize.height, -1.0f, 1.0f);
+    
+    currentScene_->update(deltaTime_);
+    currentScene_->render(gfx);
+
+    gfx->finishDraw();
+}
+
+void Director::setScene(std::unique_ptr<Scene> &scene) {
+  currentScene_ = std::move(scene);
+}
+
+void Director::setResolutionPolicy(const ResolutionPolicy &policy) {
+    resolutionPolicy_ = policy;
+}
+
+void Director::setContentScaleFactor(float contentScaleFactor) {
+    contentScaleFactor_ = contentScaleFactor;
+}
+
+void Director::setDesignResolutionSize(const Size &designResolutionSize) {
+    designResolutionSize_ = designResolutionSize;
 }
 
 glm::mat4 Director::getProjectionMatrix() const {
@@ -46,6 +58,26 @@ glm::mat4 Director::getProjectionMatrix() const {
 
 Scene* Director::getRunningScene() const {
     return currentScene_.get();
+}
+
+const ResolutionPolicy &Director::getResolutionPolicy() const {
+    return resolutionPolicy_;
+}
+
+float Director::getContentScaleFactor() const {
+    return contentScaleFactor_;
+}
+
+const Size &Director::getDesignResolutionSize() const {
+    return designResolutionSize_;
+}
+
+double Director::getTime() const {
+    return platform::Window::getTime();
+}
+
+float Director::getDeltaTime() const {
+    return deltaTime_;
 }
 
 const Size& Director::getVisibleSize() const {

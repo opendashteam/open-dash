@@ -14,11 +14,13 @@ class Application {
 public:
     static Application* get();
 
-    static std::unique_ptr<Application> create(const std::string& title, int width, int height);
-    bool init(const std::string& title, int width, int height);
+    static std::unique_ptr<Application> create(std::string_view title, int width, int height);
+    bool init(std::string_view title, int width, int height);
     void run();
+    void tick();
     void quit();
     void setScene(std::unique_ptr<Scene> scene);
+    void gameSetup();
 
 private:
     static Application* instance_;

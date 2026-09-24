@@ -10,7 +10,7 @@ Application *Application::get() {
     return instance_;
 }
 
-std::unique_ptr<Application> Application::create(const std::string& title, int width, int height)
+std::unique_ptr<Application> Application::create(std::string_view title, int width, int height)
 {
     auto ret = std::make_unique<Application>();
 
@@ -22,7 +22,7 @@ std::unique_ptr<Application> Application::create(const std::string& title, int w
     return ret;
 }
 
-bool Application::init(const std::string& title, int width, int height)
+bool Application::init(std::string_view title, int width, int height)
 {
     if (!platform::Window::init(title, width, height))
         return false;
@@ -39,11 +39,17 @@ bool Application::init(const std::string& title, int width, int height)
         static_cast<float>(height)
     });
 
+    gameSetup();
+
     return true;
 }
 
 void Application::run() {
     director_->start();
+}
+
+void Application::tick() {
+    director_->tick();
 }
 
 void Application::quit() {
@@ -53,6 +59,13 @@ void Application::quit() {
 
 void Application::setScene(std::unique_ptr<Scene> scene) {
     if (director_) director_->setScene(scene);  
+}
+
+void Application::gameSetup() { // Run game-specific setup code
+
+    director_->setContentScaleFactor(4.0f); // to be read from save file
+    director_->setDesignResolutionSize({480.0f, 320.0f}); // GD's own size, do not change
+    
 }
 
 }

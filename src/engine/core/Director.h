@@ -14,12 +14,22 @@ namespace opendash::engine
 class Director : public Singleton<Director> {
     friend class Singleton<Director>;
 public:
+    void tick();
+
     // setters
     void setScene(std::unique_ptr<Scene>& scene);
+    void setResolutionPolicy(const ResolutionPolicy& policy);
+    void setContentScaleFactor(float contentScaleFactor);
+    void setDesignResolutionSize(const Size& designResolutionSize);
 
     // getters
     glm::mat4 getProjectionMatrix() const;
     Scene* getRunningScene() const;
+    const ResolutionPolicy& getResolutionPolicy() const;
+    float getContentScaleFactor() const;
+    const Size& getDesignResolutionSize() const;
+    double getTime() const;
+    float getDeltaTime() const;
 
     /*
         Get the dimensions of the visible portion of
@@ -40,13 +50,22 @@ public:
     
 protected:
     bool init() override;
+    void computeDeltaTime();
 private:
     inline static Director* instance_ = nullptr;
 
     glm::mat4 projectionMatrix_{1.0f};
     std::unique_ptr<Scene> currentScene_ = nullptr;
+
     Size visibleSize_ = {0.0f, 0.0f};
     Size windowSize_  = {0.0f, 0.0f};
+    Size designResolutionSize_ = {0.0f, 0.0f};
+
+    float contentScaleFactor_ = 1.0f;
+    ResolutionPolicy resolutionPolicy_ = ResolutionPolicy::ShowAll;
+
+    double lastTime_ = 0.0;
+    float deltaTime_ = 0.0f;
 };
 
 }
