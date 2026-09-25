@@ -17,18 +17,20 @@ PList::~PList() {
 
 std::string PList::toString(u32 indent) const {
     switch (type_) {
-    case String: return std::string("\"") + stringValue_ + std::string("\"");
-    case Boolean: return booleanValue_ ? "true" : "false";
-    case Dict:
+    case String:
+        return std::string("\"") + stringValue_ + std::string("\"");
+    case Boolean:
+        return booleanValue_ ? "true" : "false";
+    case Dict: {
+        const u32 nextIndent = indent + 4;
+        std::string string = "<DICT>\n";
+        for (const auto& [key, value] : dictValue_)
+            string += std::string(nextIndent, ' ') + key + ": " + value->toString(nextIndent) + "\n";
+        return string;
     }
-
-    indent += 4;
-
-    std::string string = "<DICT>\n";
-    for (const auto& [key, value] : dictValue_)
-        string += std::string(indent, ' ') + key + ": " + value->toString(indent) + "\n";
-
-    return string;
+    default:
+        return "<UNKNOWN>";
+    }
 }
 
 std::unique_ptr<PList> PList::load(const std::filesystem::path& relativePath) {
