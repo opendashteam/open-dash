@@ -87,32 +87,28 @@ void Application::gameSetup() { // Run game-specific setup code
 }
 
 bool Application::initWindow() {
-    const auto& gfxLibs = platform::Window::getSupportedGraphicsLibraries();
+    auto gfxLibs = platform::Window::getSupportedGraphicsLibraries();
 
     log::info("Available graphics libraries:");
     for (const auto& lib : gfxLibs)
         log::info("- {}", platform::graphicsLibraryToString(lib));
 
-    std::set<platform::GraphicsLibrary> libsTried;
-
     if (graphicsLibrary_ && gfxLibs.contains(graphicsLibrary_.value())) {
         if (attemptInitWithGfxLib(graphicsLibrary_.value()))
             return true;
-        libsTried.insert(graphicsLibrary_.value());
+        gfxLibs.erase(graphicsLibrary_.value());
     }
 
     if (gfxLibs.contains(platform::GraphicsLibrary::Vulkan)) {
         // attempt with vulkan first
         if (attemptInitWithGfxLib(platform::GraphicsLibrary::Vulkan))
             return true;
-        libsTried.insert(platform::GraphicsLibrary::Vulkan);
+        gfxLibs.erase(platform::GraphicsLibrary::Vulkan);
     }
 
     for (const auto& lib : gfxLibs) {
-        if (!libsTried.contains(lib)) {
-            if (attemptInitWithGfxLib(lib))
-                return true;
-        }
+        if (attemptInitWithGfxLib(lib))
+            return true;
     }
 
     log::err("Failed to find a working graphics library to start with");

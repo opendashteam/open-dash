@@ -1,0 +1,38 @@
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+struct ViewProjection
+{
+    float4x4 viewProjection;
+};
+
+struct SpriteProperties
+{
+    float4x4 positionTransform;
+    float3x3 textureTransform;
+    float4 color;
+};
+
+struct main0_out
+{
+    float2 v_uv [[user(locn0)]];
+    float4 v_color [[user(locn1)]];
+    float4 gl_Position [[position]];
+};
+
+struct main0_in
+{
+    float2 a_position [[attribute(0)]];
+};
+
+vertex main0_out main0(main0_in in [[stage_in]], constant ViewProjection& _19 [[buffer(0)]], constant SpriteProperties& _27 [[buffer(1)]])
+{
+    main0_out out = {};
+    out.gl_Position = (_19.viewProjection * _27.positionTransform) * float4(in.a_position, 0.0, 1.0);
+    out.v_uv = (_27.textureTransform * float3(in.a_position, 1.0)).xy;
+    out.v_color = _27.color;
+    return out;
+}
+

@@ -69,7 +69,7 @@ private:
 
     bool init();
 
-    SDL_GPUShader* loadShader(const char* path, SDL_GPUShaderStage stage, Uint32 numSamplers, Uint32 numUniformBuffers);
+    SDL_GPUShader* loadShader(const std::string& path, SDL_GPUShaderStage stage, Uint32 numSamplers, Uint32 numUniformBuffers);
 
     SDL_GPUGraphicsPipeline* createGraphicsPipeline(
         SDL_GPUPrimitiveType primitive,
@@ -130,6 +130,9 @@ private:
     SDL_GPUSampler* fetchSampler(const engine::TextureWrapParameters& params);
 
 private:
+    GraphicsLibrary graphicsLibrary_;
+    SDL_GPUShaderFormat shaderFormat_;
+
     engine::u32 numTexturesAllocated_ = 0;
 
     SDL_Window* window_ = nullptr;

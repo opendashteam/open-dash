@@ -395,16 +395,26 @@ void SDLGPUGraphics::drawSprite(
 
 SDLGPUGraphics* SDLGPUGraphics::create(SDL_Window* window, GraphicsLibrary lib)
 {
+    SDL_GPUShaderFormat format;
     const char* api;
     switch (lib) {
-    case GraphicsLibrary::Vulkan: api = "vulkan"; break;
-    case GraphicsLibrary::Metal: api = "metal"; break;
-    case GraphicsLibrary::Direct3D12: api = "direct3d12"; break;
+    case GraphicsLibrary::Vulkan:
+        format = SDL_GPU_SHADERFORMAT_SPIRV;
+        api = "vulkan";
+        break;
+    case GraphicsLibrary::Metal:
+        format = SDL_GPU_SHADERFORMAT_MSL;
+        api = "metal";
+        break;
+    case GraphicsLibrary::Direct3D12:
+        format = SDL_GPU_SHADERFORMAT_DXIL;
+        api = "direct3d12";
+        break;
     default:
         assert(false && "invalid graphics api");
     }
 
-    SDL_GPUDevice* device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, api);
+    SDL_GPUDevice* device = SDL_CreateGPUDevice(format, true, api);
     if (!device)
     {
         log::err("Failed to create SDL_GPUDevice: {}", SDL_GetError());
@@ -421,6 +431,8 @@ SDLGPUGraphics* SDLGPUGraphics::create(SDL_Window* window, GraphicsLibrary lib)
 
     auto graphics = new SDLGPUGraphics;
 
+    graphics->graphicsLibrary_ = lib;
+    graphics->shaderFormat_ = format;
     graphics->window_ = window;
     graphics->device_ = device;
 
@@ -453,13 +465,23 @@ bool SDLGPUGraphics::init()
     return true;
 }
 
-SDL_GPUShader* SDLGPUGraphics::loadShader(const char* path, SDL_GPUShaderStage stage, u32 numSamplers, u32 numUniformBuffers)
+SDL_GPUShader* SDLGPUGraphics::loadShader(const std::string& path, SDL_GPUShaderStage stage, u32 numSamplers, u32 numUniformBuffers)
 {
+    std::string rawPath;
+    switch (graphicsLibrary_) {
+    case GraphicsLibrary::Vulkan: rawPath = "assets/shaders/spv/" + path + ".spv"; break;
+    case GraphicsLibrary::Direct3D12: rawPath = "assets/shaders/dxil/" + path + ".dxil"; break;
+    case GraphicsLibrary::Metal: rawPath = "assets/shaders/msl/" + path + ".msl"; break;
+    default:
+        assert(false && "invalid graphics library");
+        return nullptr;
+    }
+
     size_t codeSize;
-    void* code = SDL_LoadFile(path, &codeSize);
+    void* code = SDL_LoadFile(rawPath.c_str(), &codeSize);
     if (!code)
     {
-        log::err("failed to load shader {}: {}", path, SDL_GetError());
+        log::err("Failed to load shader {}: {}", path, SDL_GetError());
         return nullptr;
     }
 
@@ -467,7 +489,7 @@ SDL_GPUShader* SDLGPUGraphics::loadShader(const char* path, SDL_GPUShaderStage s
     info.code = (u8*)code;
     info.code_size = codeSize;
     info.entrypoint = "main";
-    info.format = SDL_GPU_SHADERFORMAT_SPIRV;
+    info.format = shaderFormat_;
     info.stage = stage;
     info.num_samplers = numSamplers;
     info.num_uniform_buffers = numUniformBuffers;
@@ -475,7 +497,7 @@ SDL_GPUShader* SDLGPUGraphics::loadShader(const char* path, SDL_GPUShaderStage s
     SDL_GPUShader* shader = SDL_CreateGPUShader(device_, &info);
     if (!shader)
     {
-        log::err("failed to compile shader {}:\n{}", path, SDL_GetError());
+        log::err("Failed to compile shader {}:\n{}", path, SDL_GetError());
         SDL_free(code);
         return nullptr;
     }
@@ -555,9 +577,9 @@ SDL_GPUGraphicsPipeline* SDLGPUGraphics::createGraphicsPipeline(
 
 bool SDLGPUGraphics::setupPipelines()
 {
-    SDL_GPUShader* batchVertexShader  = loadShader("assets/shaders/spriteBatch.vert.spv", SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
-    SDL_GPUShader* spriteVertexShader = loadShader("assets/shaders/sprite.vert.spv",      SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
-    SDL_GPUShader* fragmentShader     = loadShader("assets/shaders/sprite.frag.spv",      SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0);
+    SDL_GPUShader* batchVertexShader  = loadShader("spriteBatch.vert", SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
+    SDL_GPUShader* spriteVertexShader = loadShader("sprite.vert",      SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
+    SDL_GPUShader* fragmentShader     = loadShader("sprite.frag",      SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0);
 
     if (
         !batchVertexShader ||
