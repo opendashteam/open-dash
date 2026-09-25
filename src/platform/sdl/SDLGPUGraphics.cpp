@@ -393,9 +393,18 @@ void SDLGPUGraphics::drawSprite(
     SDL_DrawGPUPrimitives(renderPass_, 4, 1, 0, 0);
 }
 
-SDLGPUGraphics* SDLGPUGraphics::create(SDL_Window* window)
+SDLGPUGraphics* SDLGPUGraphics::create(SDL_Window* window, GraphicsLibrary lib)
 {
-    SDL_GPUDevice* device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, nullptr);
+    const char* api;
+    switch (lib) {
+    case GraphicsLibrary::Vulkan: api = "vulkan"; break;
+    case GraphicsLibrary::Metal: api = "metal"; break;
+    case GraphicsLibrary::Direct3D12: api = "direct3d12"; break;
+    default:
+        assert(false && "invalid graphics api");
+    }
+
+    SDL_GPUDevice* device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, api);
     if (!device)
     {
         log::err("Failed to create SDL_GPUDevice: {}", SDL_GetError());
@@ -483,7 +492,7 @@ static u32 getVertexFormatType(SDL_GPUVertexElementFormat format) {
     case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3: return sizeof(float) * 3;
     case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4: return sizeof(float) * 4;
     default:
-        assert(true || "vertex format unknown");
+        assert(false && "vertex format unknown");
     }
     return 0;
 }
@@ -680,7 +689,7 @@ static inline SDL_GPUSamplerAddressMode toSDLAddressMode(WrapMode mode) {
     case WrapMode::Repeat: return SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
     case WrapMode::MirroredRepeat: return SDL_GPU_SAMPLERADDRESSMODE_MIRRORED_REPEAT;
     default:
-        assert(true || "invalid WrapMode");
+        assert(false && "invalid WrapMode");
     }
     return SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
 }

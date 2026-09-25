@@ -1,6 +1,7 @@
 #pragma once
 
 #include "engine/core/Graphics.h"
+#include "../Window.h"
 
 /*
     Because this header file includes SDL, it is important
@@ -58,7 +59,7 @@ public:
     );
 
 public:
-    static SDLGPUGraphics* create(SDL_Window* window);
+    static SDLGPUGraphics* create(SDL_Window* window, GraphicsLibrary library);
 
 private:
     struct VertexAttribute {

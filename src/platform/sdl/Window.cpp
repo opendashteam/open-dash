@@ -43,7 +43,7 @@ bool Window::create(
 
     startTick = SDL_GetTicksNS();
 
-    graphics = SDLGPUGraphics::create(window);
+    graphics = SDLGPUGraphics::create(window, library);
     if (!graphics) {
         destroy();
         return false;
