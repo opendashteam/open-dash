@@ -35,7 +35,7 @@ private:
     std::unique_ptr<AssetManager> assetManager_ = nullptr;
     std::unique_ptr<Director>     director_     = nullptr;
 
-    std::optional<platform::GraphicsLibrary> graphicsLibrary_ = platform::GraphicsLibrary::Direct3D12;
+    std::optional<platform::GraphicsLibrary> graphicsLibrary_;
 
     std::string_view initTitle;
     int initWidth, initHeight;
