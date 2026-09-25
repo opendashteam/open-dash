@@ -12,9 +12,15 @@ auto* cube = addChild(Sprite::create("cube.png"));
 ```
 - Uhhhhh
 
-<!-- ## TO COMPILE SHADERS
-its dis (run in da project root):
+## Compilation tips
+You usually have to run:
 ```
-glslc -fshader-stage=vertex src/game/shaders/sprite.vert.glsl -o src/game/shaders/sprite.vert.spv
-glslc -fshader-stage=fragment src/game/shaders/sprite.frag.glsl -o src/game/shaders/sprite.frag.spv
-``` -->
+cmake -S . -B build
+cmake --build build
+```
+
+If you're on Mac OS, you can make a `.app` file by
+switching the first line with:
+```
+cmake -S . -B build -DCREATE_MAC_BUNDLE=ON
+```
