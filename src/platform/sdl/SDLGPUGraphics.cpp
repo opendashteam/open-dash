@@ -21,12 +21,15 @@ SDLGPUGraphics::~SDLGPUGraphics()
 {
     assert(numTexturesAllocated_ == 0);
 
+    for (const auto& [_, sampler] : samplers_)
+        SDL_ReleaseGPUSampler(device_, sampler);
+
     if (defaultSpritePipeline_)
-        SDL_ReleaseGPUGraphicsPipeline(device_, defaultSpritePipeline_);
+        release(defaultSpritePipeline_);
     if (spriteBatchPipeline_)
-        SDL_ReleaseGPUGraphicsPipeline(device_, spriteBatchPipeline_);
+        release(spriteBatchPipeline_);
     if (quadVertexBuffer_)
-        SDL_ReleaseGPUBuffer(device_, quadVertexBuffer_);
+        release(quadVertexBuffer_);
 
     SDL_ReleaseWindowFromGPUDevice(device_, window_);
     SDL_DestroyGPUDevice(device_);
@@ -71,7 +74,6 @@ void SDLGPUGraphics::finishDraw()
 
 struct TextureContainer {
     SDL_GPUTexture* texture;
-    SDL_GPUSampler* sampler;
     u32 width, height;
 };
 
@@ -127,22 +129,8 @@ InternalTexture SDLGPUGraphics::textureCreate(
 
     release(uploadBuffer);
 
-    SDL_GPUSamplerCreateInfo samplerInfo{};
-    samplerInfo.min_filter = SDL_GPU_FILTER_LINEAR;
-    samplerInfo.mag_filter = SDL_GPU_FILTER_LINEAR;
-    samplerInfo.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
-    samplerInfo.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
-    samplerInfo.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
-
-    SDL_GPUSampler* sampler = SDL_CreateGPUSampler(device_, &samplerInfo);
-    if (!sampler) {
-        SDL_Log("Could not cache texture, sampler creation failed: %s", SDL_GetError());
-        SDL_ReleaseGPUTexture(device_, texture);
-        return nullptr;
-    }
-
     numTexturesAllocated_++;
-    return (InternalTexture)new TextureContainer { texture, sampler, width, height };
+    return (InternalTexture)new TextureContainer { texture, width, height };
 }
 
 void SDLGPUGraphics::textureDestroy(InternalTexture raw)
@@ -151,9 +139,7 @@ void SDLGPUGraphics::textureDestroy(InternalTexture raw)
 
     auto texture = (TextureContainer*)raw;
 
-    SDL_ReleaseGPUSampler(device_, texture->sampler);
     SDL_ReleaseGPUTexture(device_, texture->texture);
-
     delete texture;
 }
 
@@ -304,6 +290,11 @@ void SDLGPUGraphics::spriteBatchDestroy(engine::InternalSpriteBatch raw) {
     release(batch->indexBuffer);
 }
 
+static TextureWrapParameters spriteBatchWrapParams = {
+    WrapMode::Clamp,
+    WrapMode::Clamp
+};
+
 void SDLGPUGraphics::drawSpriteBatch(
     InternalSpriteBatch raw,
     InternalTexture rawTexture,
@@ -349,7 +340,10 @@ void SDLGPUGraphics::drawSpriteBatch(
 
     SDL_GPUTextureSamplerBinding textureBinding{};
     textureBinding.texture = texture->texture;
-    textureBinding.sampler = texture->sampler;
+    textureBinding.sampler = fetchSampler(spriteBatchWrapParams);
+
+    if (!textureBinding.sampler)
+        return;
     
     SDL_PushGPUVertexUniformData(commandBuffer_, UNIFORM_SLOT_SPRITE_BATCH_PROPERTIES, &positionTransform, sizeof(positionTransform));
 
@@ -389,7 +383,10 @@ void SDLGPUGraphics::drawSprite(
 
     SDL_GPUTextureSamplerBinding textureBinding{};
     textureBinding.texture = texture->texture;
-    textureBinding.sampler = texture->sampler;
+    textureBinding.sampler = fetchSampler(wrapParams);
+
+    if (!textureBinding.sampler)
+        return;
 
     SDL_BindGPUVertexBuffers(renderPass_, 0, &vertexBinding, 1);
     SDL_BindGPUFragmentSamplers(renderPass_, 0, &textureBinding, 1);
@@ -401,14 +398,14 @@ SDLGPUGraphics* SDLGPUGraphics::create(SDL_Window* window)
     SDL_GPUDevice* device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, nullptr);
     if (!device)
     {
-        log::err("failed to create SDL_GPUDevice: {}", SDL_GetError());
+        log::err("Failed to create SDL_GPUDevice: {}", SDL_GetError());
         SDL_DestroyGPUDevice(device);
         return nullptr;
     }
 
     if (!SDL_ClaimWindowForGPUDevice(device, window))
     {
-        log::err("failed to claim window for gpu device: {}", SDL_GetError());
+        log::err("Failed to claim window for gpu device: {}", SDL_GetError());
         SDL_DestroyGPUDevice(device);
         return nullptr;
     }
@@ -675,6 +672,40 @@ SDL_GPUBuffer* SDLGPUGraphics::createStaticGPUBuffer(u32 size, SDL_GPUBufferUsag
     uploadBufferData(NULL, uploadBuffer, buffer, size);
     release(uploadBuffer);
     return buffer;
+}
+
+static inline SDL_GPUSamplerAddressMode toSDLAddressMode(WrapMode mode) {
+    switch (mode) {
+    case WrapMode::Clamp: return SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+    case WrapMode::Repeat: return SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+    case WrapMode::MirroredRepeat: return SDL_GPU_SAMPLERADDRESSMODE_MIRRORED_REPEAT;
+    default:
+        assert(true || "invalid WrapMode");
+    }
+    return SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+}
+
+SDL_GPUSampler* SDLGPUGraphics::fetchSampler(const engine::TextureWrapParameters& params) {
+    u32 code = params.asBitCode();
+    auto it = samplers_.find(code);
+    if (it != samplers_.end())
+        return it->second;
+
+    SDL_GPUSamplerCreateInfo samplerInfo{};
+    samplerInfo.min_filter = SDL_GPU_FILTER_LINEAR;
+    samplerInfo.mag_filter = SDL_GPU_FILTER_LINEAR;
+    samplerInfo.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
+    samplerInfo.address_mode_u = toSDLAddressMode(params.u);
+    samplerInfo.address_mode_v = toSDLAddressMode(params.v);
+
+    SDL_GPUSampler* sampler = SDL_CreateGPUSampler(device_, &samplerInfo);
+    if (!sampler) {
+        SDL_Log("Could not create sampler: %s", SDL_GetError());
+        return nullptr;
+    }
+
+    samplers_[code] = sampler;
+    return sampler;
 }
 
 };

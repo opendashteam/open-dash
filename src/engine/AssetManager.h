@@ -6,6 +6,7 @@
 #include "core/Singleton.h"
 #include "Texture.h"
 #include "core/SpriteFrame.h"
+#include "utilities/log.h"
 
 namespace opendash::engine
 {
@@ -40,6 +41,8 @@ public:
         Free all GPU textures and samplers that are stored.
     */
     void releaseAllTextures();
+
+    Texture* fetchTexture(const std::filesystem::path& path);
 
     inline const std::unordered_map<std::string, SpriteFrame*>& getSpriteFrames() const {
         return spriteFrames_;

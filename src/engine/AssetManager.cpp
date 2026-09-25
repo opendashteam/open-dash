@@ -85,11 +85,12 @@ Texture* AssetManager::getCachedTexture(const std::filesystem::path &relativePat
 bool AssetManager::loadSpriteSheet(const std::filesystem::path& relativePath) {
     auto texturePath = relativePath;
     texturePath.replace_extension(".png");
-
-    if (!cacheTexture(texturePath))
+    
+    Texture* texture = fetchTexture(texturePath);
+    if (!texture) {
+        log::err("Failed to load sprite sheet {}", relativePath.string());
         return false;
-
-    Texture* texture = getCachedTexture(texturePath);
+    }
 
     auto plistPath = relativePath;
     plistPath.replace_extension(".plist");
@@ -145,6 +146,13 @@ void AssetManager::releaseAllTextures()
     }
 
     cachedTextures_.clear();
+}
+
+Texture* AssetManager::fetchTexture(const std::filesystem::path& path)
+{
+    if (!isTextureCached(path) && !cacheTexture(path))
+        return nullptr;
+    return getCachedTexture(path);
 }
 
 bool AssetManager::init()

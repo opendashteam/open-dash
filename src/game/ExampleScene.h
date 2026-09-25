@@ -16,6 +16,7 @@ protected:
     virtual bool init() override;
 private:
     Sprite* exampleSprite_ = nullptr;
+    TilingSprite* tilingSprite_ = nullptr;
     SpriteBatchTest* batchTest_ = nullptr;
     bool spriteMovingRight_ = true;
 };

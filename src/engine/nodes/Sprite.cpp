@@ -39,14 +39,9 @@ std::unique_ptr<Sprite> Sprite::createWithFrame(const std::string& spriteFrameNa
 }
 
 bool Sprite::initWithPath(const std::filesystem::path& path) {
-    auto* am = AssetManager::get();
-    if (!am->isTextureCached(path) && !am->cacheTexture(path)) {
-        log::err("Failed to initialize sprite, could not load texture at path: {}", path.string());
-        return false;
-    }
-
-    texture_ = am->getCachedTexture(path);
+    texture_ = AssetManager::get()->fetchTexture(path);
     if (!texture_) {
+        log::err("Failed to initialize sprite, could not load texture at path: {}", path.string());
         return false;
     }
 
@@ -95,10 +90,8 @@ bool Sprite::init() {
 
 void Sprite::setupSizes(const Size &contentPixels, const Size &quadPixels)
 {
-    float inv = 1.0f / Director::get()->getContentScaleFactor();
-
-    setContentSize(contentPixels.width * inv, contentPixels.height * inv);
-    internalSpriteTransform_ = glm::scale(glm::mat4(1.0f), glm::vec3(quadPixels.width * inv, quadPixels.height * inv, 1.0f));
+    setContentSize(contentPixels.inUnits());
+    internalSpriteTransform_ = glm::scale(glm::mat4(1.0f), glm::vec3(quadPixels.inUnits().toGLM(), 1.0f));
 }
 
 }

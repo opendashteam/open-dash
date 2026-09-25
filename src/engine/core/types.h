@@ -191,6 +191,10 @@ struct Size {
     glm::vec2 toGLM() const {
         return { width, height };
     }
+
+    Size inUnits() const;
+
+    Size inPixels() const;
 };
 
 struct Point {
@@ -260,6 +264,10 @@ struct Point {
     glm::vec2 toGLM() const {
         return { x, y };
     }
+
+    Point inUnits() const;
+
+    Point inPixels() const;
 };
 
 struct Rect {
@@ -325,12 +333,16 @@ enum class ResolutionPolicy {
 };
 
 enum class WrapMode {
-    Repeat, Clamp, MirroredRepeat
+    Repeat, Clamp, MirroredRepeat, Count
 };
 
 struct TextureWrapParameters {
     WrapMode u;
     WrapMode v;
+
+    inline u32 asBitCode() const {
+        return (u32)u * (u32)WrapMode::Count + (u32)v;
+    }
 };
 
 }

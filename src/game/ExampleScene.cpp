@@ -5,6 +5,7 @@ namespace opendash
 {
 
 void ExampleScene::update(float dt) {
+
     if (exampleSprite_) {
         // exampleSprite_->rotateBy((180.0f / constants::player::kRotationDuration) * dt);
     }
@@ -28,6 +29,7 @@ bool ExampleScene::init() {
     exampleSprite_->setPosition(Director::get()->getVisibleSize() / 2);
     */
 
+    /*
     exampleSprite_ = addChild(Sprite::createWithFrame("GJ_levelComplete_001.png"));
     exampleSprite_->setPosition(Director::get()->getVisibleSize() / 2);
 
@@ -35,6 +37,14 @@ bool ExampleScene::init() {
 
     batchTest_ = addChild(SpriteBatchTest::create());
     batchTest_->setPosition(Director::get()->getVisibleSize() / 2);
+    */
+
+    tilingSprite_ = addChild(TilingSprite::create("cube.png"));
+    tilingSprite_->setContentSize({232, 65});
+    tilingSprite_->setAnchorPoint({.5f, .5f});
+    tilingSprite_->setTileOffset(15, 15);
+    tilingSprite_->setTileScale(2.0, 1.5);
+    tilingSprite_->setPosition(Director::get()->getVisibleSize() / 2);
 
     return true;
 }

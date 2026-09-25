@@ -126,6 +126,8 @@ private:
 
     SDL_GPUBuffer* createStaticGPUBuffer(engine::u32 size, SDL_GPUBufferUsageFlags usage, void* data);
 
+    SDL_GPUSampler* fetchSampler(const engine::TextureWrapParameters& params);
+
 private:
     engine::u32 numTexturesAllocated_ = 0;
 
@@ -134,6 +136,8 @@ private:
 
     SDL_GPUGraphicsPipeline* defaultSpritePipeline_ = nullptr;
     SDL_GPUGraphicsPipeline* spriteBatchPipeline_ = nullptr;
+
+    std::unordered_map<engine::u32, SDL_GPUSampler*> samplers_;
 
     SDL_GPUBuffer* quadVertexBuffer_ = nullptr;
 

@@ -24,7 +24,8 @@ public:
     // getters
     glm::mat4 getProjectionMatrix() const;
     Scene* getRunningScene() const;
-    float getContentScaleFactor() const;
+    inline float getContentScaleFactor() const { return contentScaleFactor_; }
+    inline float getInvertedContentScaleFactor() const { return invertedContentScaleFactor_; }
     const Size& getDesignResolutionSize() const;
     double getTime() const;
     float getDeltaTime() const;
@@ -63,6 +64,7 @@ private:
     Size designResolutionSize_ = {0.0f, 0.0f};
 
     float contentScaleFactor_ = 1.0f;
+    float invertedContentScaleFactor_ = 1.0f;
 
     double lastTime_ = 0.0;
     float deltaTime_ = 0.0f;

@@ -32,17 +32,27 @@ public:
     bool getMirroredRepeatX() const;
     bool getMirroredRepeatY() const;
 
+    virtual void setContentSize(const Size& contentSize) override;
+
 protected:
     bool initWithPath(const std::filesystem::path& path);
     void draw(Graphics* gfx) override;
     bool init() override;
+
 private:
+    Texture* texture_ = nullptr;
+
     Point tileOffset_ = {0.0f, 0.0f};
     Point tileScale_  = {1.0f, 1.0f};
 
     bool uvDirty_ = true;
     bool mirroredRepeatX_ = false;
     bool mirroredRepeatY_ = false;
+
+    Size textureWorldSize_;
+
+    bool spriteSizeTransformDirty_ = true;
+    glm::mat4 spriteSizeTransform_;
 };
 
 }

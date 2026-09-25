@@ -41,7 +41,10 @@ void Director::setScene(std::unique_ptr<Scene> &scene) {
 }
 
 void Director::setContentScaleFactor(float contentScaleFactor) {
+    if (contentScaleFactor <= 0.0f)
+        return;
     contentScaleFactor_ = contentScaleFactor;
+    invertedContentScaleFactor_ = 1.0f / contentScaleFactor;
 }
 
 void Director::setDesignResolutionSize(const Size &designResolutionSize) {
@@ -55,10 +58,6 @@ glm::mat4 Director::getProjectionMatrix() const {
 
 Scene* Director::getRunningScene() const {
     return currentScene_.get();
-}
-
-float Director::getContentScaleFactor() const {
-    return contentScaleFactor_;
 }
 
 const Size &Director::getDesignResolutionSize() const {
