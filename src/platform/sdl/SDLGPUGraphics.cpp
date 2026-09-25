@@ -487,7 +487,7 @@ SDL_GPUShader* SDLGPUGraphics::loadShader(const std::string& path, SDL_GPUShader
     SDL_GPUShaderCreateInfo info{};
     info.code = code.data();
     info.code_size = code.size();
-    info.entrypoint = "main";
+    info.entrypoint = graphicsLibrary_ == GraphicsLibrary::Metal ? "main0" : "main";
     info.format = shaderFormat_;
     info.stage = stage;
     info.num_samplers = numSamplers;
