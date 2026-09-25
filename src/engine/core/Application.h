@@ -3,6 +3,8 @@
 #include <memory>
 #include "../AssetManager.h"
 #include "Director.h"
+#include "../../platform/Window.h"
+#include <optional>
 
 namespace opendash::engine
 {
@@ -23,10 +25,20 @@ public:
     void gameSetup();
 
 private:
+    bool initWindow();
+
+    bool attemptInitWithGfxLib(platform::GraphicsLibrary lib);
+
+private:
     static Application* instance_;
 
     std::unique_ptr<AssetManager> assetManager_ = nullptr;
     std::unique_ptr<Director>     director_     = nullptr;
+
+    std::optional<platform::GraphicsLibrary> graphicsLibrary_ = platform::GraphicsLibrary::Direct3D12;
+
+    std::string_view initTitle;
+    int initWidth, initHeight;
 };
 
 }

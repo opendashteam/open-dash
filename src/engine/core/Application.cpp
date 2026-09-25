@@ -24,8 +24,17 @@ std::unique_ptr<Application> Application::create(std::string_view title, int wid
 
 bool Application::init(std::string_view title, int width, int height)
 {
-    if (!platform::Window::init(title, width, height))
+    if (!platform::Window::init())
         return false;
+
+    initTitle = title;
+    initWidth = width;
+    initHeight = height;
+
+    if (!initWindow()) {
+        platform::Window::quit();
+        return false;
+    }
 
     // claim ownership of singleton managers and stuff
     assetManager_ = AssetManager::create();
@@ -62,6 +71,7 @@ void Application::quit() {
     // Making sure director gets deleted before we finalize graphics
     director_ = nullptr;
     platform::Window::destroy();
+    platform::Window::quit();
 }
 
 void Application::setScene(std::unique_ptr<Scene> scene) {
@@ -74,6 +84,45 @@ void Application::gameSetup() { // Run game-specific setup code
     director_->setContentScaleFactor(4.0f); // to be read from save file
     director_->setDesignResolutionSize({480.0f, 320.0f}); // GD's own size, do not change
     
+}
+
+bool Application::initWindow() {
+    const auto& gfxLibs = platform::Window::getSupportedGraphicsLibraries();
+
+    log::info("Available graphics libraries:");
+    for (const auto& lib : gfxLibs)
+        log::info("- {}", platform::graphicsLibraryToString(lib));
+
+    std::set<platform::GraphicsLibrary> libsTried;
+
+    if (graphicsLibrary_ && gfxLibs.contains(graphicsLibrary_.value())) {
+        if (attemptInitWithGfxLib(graphicsLibrary_.value()))
+            return true;
+        libsTried.insert(graphicsLibrary_.value());
+    }
+
+    if (gfxLibs.contains(platform::GraphicsLibrary::Vulkan)) {
+        // attempt with vulkan first
+        if (attemptInitWithGfxLib(platform::GraphicsLibrary::Vulkan))
+            return true;
+        libsTried.insert(platform::GraphicsLibrary::Vulkan);
+    }
+
+    for (const auto& lib : gfxLibs) {
+        if (!libsTried.contains(lib)) {
+            if (attemptInitWithGfxLib(lib))
+                return true;
+        }
+    }
+
+    log::err("Failed to find a working graphics library to start with");
+    return false;
+}
+
+bool Application::attemptInitWithGfxLib(platform::GraphicsLibrary lib) {
+    log::info("Initializing graphics with {}", platform::graphicsLibraryToString(lib));
+
+    return platform::Window::create(initTitle, lib, initWidth, initHeight);
 }
 
 }

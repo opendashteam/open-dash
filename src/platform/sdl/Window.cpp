@@ -12,16 +12,32 @@ static SDL_Window* window;
 static u64 startTick = 0;
 static Window::ResizeCallback resizeCallback;
 static SDLGPUGraphics* graphics = nullptr;
+static bool graphicsLibsDirty = true;
+static std::set<GraphicsLibrary> graphicsLibraries;
 
-bool Window::init(std::string_view title, int width, int height)
-{
-    SDL_Init(SDL_INIT_VIDEO);
+bool Window::init() {
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
+        log::err("SDL_Init failed: ", SDL_GetError());
+        return false;
+    }
+    return true;
+}
 
+void Window::quit() {
+    SDL_Quit();
+}
+
+bool Window::create(
+    std::string_view title,
+    GraphicsLibrary library,
+    int width,
+    int height
+) {
     std::string titleString{title};
     window = SDL_CreateWindow(titleString.c_str(), width, height, SDL_WINDOW_RESIZABLE);
     if (!window)
     {
-        log::err("failed to create a SDL window");
+        log::err("Failed to create a SDL window");
         return false;
     }
 
@@ -62,6 +78,26 @@ engine::Size Window::getPixelSize()
 
 double Window::getTime() {
     return (double)(SDL_GetTicksNS() - startTick) / 1'000'000'000.0;
+}
+
+const std::set<GraphicsLibrary>& Window::getSupportedGraphicsLibraries() {
+    if (graphicsLibsDirty) {
+        graphicsLibraries.clear();
+
+        u32 index = 0;
+        while (const char* name = SDL_GetGPUDriver(index)) {
+            if (strcmp(name, "vulkan") == 0)
+                graphicsLibraries.insert(GraphicsLibrary::Vulkan);
+            else if (strcmp(name, "metal") == 0)
+                graphicsLibraries.insert(GraphicsLibrary::Metal);
+            if (strcmp(name, "direct3d12") == 0)
+                graphicsLibraries.insert(GraphicsLibrary::Direct3D12);
+            index++;
+        }
+
+        graphicsLibsDirty = false;
+    }
+    return graphicsLibraries;
 }
 
 engine::Graphics* Window::getGraphics()
