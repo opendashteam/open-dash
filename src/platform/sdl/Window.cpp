@@ -15,11 +15,30 @@ static SDLGPUGraphics* graphics = nullptr;
 static bool graphicsLibsDirty = true;
 static std::set<GraphicsLibrary> graphicsLibraries;
 
+
+static std::filesystem::path assetsDirectory;
+static std::filesystem::path gameSaveDirectory;
+
 bool Window::init() {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         log::err("SDL_Init failed: ", SDL_GetError());
         return false;
     }
+
+    const char* path = SDL_GetBasePath();
+    if (!path) {
+        log::err("SDL_GetBasePath failed: {}", SDL_GetError());
+        return false;
+    }
+    assetsDirectory = std::filesystem::path(path) / "assets";
+
+    path = SDL_GetPrefPath(GAME_SAVE_ORG, GAME_SAVE_NAME);
+    if (!path) {
+        log::err("SDL_GetPrefPath failed: {}", SDL_GetError());
+        return false;
+    }
+    gameSaveDirectory = path;
+
     return true;
 }
 
@@ -68,16 +87,12 @@ void Window::setResizeCallback(ResizeCallback callback)
     resizeCallback = std::move(callback);
 }
 
-static bool assetsDirectoryDirty = true;
-static std::filesystem::path assetsDirectory;
-
-const std::filesystem::path& Window::getAssetsDirectoryPath()
-{
-    if (assetsDirectoryDirty) {
-        assetsDirectory = std::filesystem::path(SDL_GetBasePath()) / "assets";
-        assetsDirectoryDirty = false;
-    }
+const std::filesystem::path& Window::getAssetsDirectoryPath() {
     return assetsDirectory;
+}
+
+const std::filesystem::path& Window::getGameSavePath() {
+    return gameSaveDirectory;
 }
 
 engine::Size Window::getPixelSize()

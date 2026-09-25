@@ -32,6 +32,8 @@ bool Application::init(std::string_view title, int width, int height)
     if (!platform::Window::init())
         return false;
 
+    log::startSavingToFile("game.log");
+
     initTitle = title;
     initWidth = width;
     initHeight = height;
@@ -73,6 +75,7 @@ void Application::quit() {
     director_ = nullptr;
     platform::Window::destroy();
     platform::Window::quit();
+    log::quit();
 }
 
 void Application::setScene(std::unique_ptr<Scene> scene) {

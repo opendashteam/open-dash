@@ -5,6 +5,9 @@
 #include <set>
 #include "engine/core/types.h"        // wherever Size lives; adjust the path
 
+#define GAME_SAVE_ORG  "teamopendash"
+#define GAME_SAVE_NAME "OpenDash"
+
 namespace opendash::engine { class Graphics; }
 
 namespace opendash::platform
@@ -51,6 +54,8 @@ public:
     static void setResizeCallback(ResizeCallback callback);
 
     static const std::filesystem::path& getAssetsDirectoryPath();
+
+    static const std::filesystem::path& getGameSavePath();
 
     // current drawable size in pixels (use this for the initial size)
     static engine::Size getPixelSize();
