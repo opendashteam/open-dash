@@ -50,6 +50,8 @@ public:
     // called with the new size in pixels whenever it really changes
     static void setResizeCallback(ResizeCallback callback);
 
+    static const std::filesystem::path& getAssetsDirectoryPath();
+
     // current drawable size in pixels (use this for the initial size)
     static engine::Size getPixelSize();
 

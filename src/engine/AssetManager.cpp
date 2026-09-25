@@ -13,7 +13,7 @@ namespace opendash::engine
 {
 
 std::filesystem::path AssetManager::getFullPath(const std::filesystem::path& relative) {
-    std::filesystem::path texturePath = std::filesystem::path(PARENT_DIRECTORY) / relative;
+    std::filesystem::path texturePath = platform::Window::getAssetsDirectoryPath() / relative;
     return texturePath;
 }
 
@@ -31,6 +31,20 @@ bool AssetManager::readFileAsString(const std::filesystem::path& relativePath, s
     return true;
 }
 
+bool AssetManager::readFileAsBinaryData(const std::filesystem::path& relativePath, std::vector<u8>& outputData) {
+    std::ifstream file = std::ifstream(getFullPath(relativePath), std::ios::binary);
+    if (!file.is_open())
+        return false;
+
+    file.seekg(0, std::ios::end);
+    size_t size = file.tellg();
+    outputData.resize(size);
+    file.seekg(0);
+    file.read((char*)outputData.data(), size); 
+    file.close();
+    return true;
+}
+
 /*
     Store a texture file from disk given a path relative to the assets directory, e.g. "cube.png".
     The resulting texture is stored under "<assets_dir>/<path>".
@@ -38,11 +52,17 @@ bool AssetManager::readFileAsString(const std::filesystem::path& relativePath, s
 bool AssetManager::cacheTexture(const std::filesystem::path& relativePath) {
     if (isTextureCached(relativePath)) return true;
 
+    std::vector<u8> data;
+    if (!readFileAsBinaryData(relativePath, data)) {
+        log::err("Could not cache texture {}, could not open file", relativePath.string());
+        return false;
+    }
+
     int width;
     int height;
     auto texturePath = getFullPath(relativePath);
 
-    stbi_uc* pixels = stbi_load(texturePath.string().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load_from_memory(data.data(), data.size(), &width, &height, nullptr, STBI_rgb_alpha);
     if (!pixels) {
         log::err("Could not cache texture {}, failed to load image: {}", relativePath.string(), stbi_failure_reason());
         return false;

@@ -18,10 +18,9 @@ namespace opendash::engine
 class AssetManager : public Singleton<AssetManager> {
     friend class Singleton<AssetManager>;
 public:
-    static constexpr const char* PARENT_DIRECTORY = "assets/";
-
     std::filesystem::path getFullPath(const std::filesystem::path& relative);
     bool readFileAsString(const std::filesystem::path& relativePath, std::string& outputString);
+    bool readFileAsBinaryData(const std::filesystem::path& relativePath, std::vector<u8>& outputData);
     bool cacheTexture(const std::filesystem::path& relativePath);
     bool isTextureCached(const std::filesystem::path& relativePath);
 

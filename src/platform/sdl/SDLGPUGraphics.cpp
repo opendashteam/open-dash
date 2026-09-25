@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include <set>
 #include "../../../assets/shaders/common.h"
+#include "../../engine/AssetManager.h"
 
 using namespace opendash::engine;
 
@@ -365,8 +366,7 @@ void SDLGPUGraphics::drawSprite(
     const glm::mat3& textureTransform,
     const engine::Color4F& color,
     const engine::TextureWrapParameters& wrapParams
-)
-{
+) {
     assert(commandBuffer_);
 
     auto texture = (TextureContainer*)raw;
@@ -469,29 +469,24 @@ SDL_GPUShader* SDLGPUGraphics::loadShader(const std::string& path, SDL_GPUShader
 {
     std::string rawPath;
     switch (graphicsLibrary_) {
-    case GraphicsLibrary::Vulkan: rawPath = "assets/shaders/spv/" + path + ".spv"; break;
-    case GraphicsLibrary::Direct3D12: rawPath = "assets/shaders/dxil/" + path + ".dxil"; break;
-    case GraphicsLibrary::Metal: rawPath = "assets/shaders/msl/" + path + ".msl"; break;
+    case GraphicsLibrary::Vulkan: rawPath = "shaders/spv/" + path + ".spv"; break;
+    case GraphicsLibrary::Direct3D12: rawPath = "shaders/dxil/" + path + ".dxil"; break;
+    case GraphicsLibrary::Metal: rawPath = "shaders/msl/" + path + ".msl"; break;
     default:
         assert(false && "invalid graphics library");
         return nullptr;
     }
 
-    rawPath = SDL_GetCurrentDirectory() + rawPath;
+    std::vector<u8> code;
 
-    log::info("loading shader: {}", rawPath);
-
-    size_t codeSize;
-    void* code = SDL_LoadFile(rawPath.c_str(), &codeSize);
-    if (!code)
-    {
-        log::err("Failed to load shader {}: {}", path, SDL_GetError());
+    if (!AssetManager::get()->readFileAsBinaryData(rawPath, code)) {
+        log::err("Failed to load shader {}", path);
         return nullptr;
     }
 
     SDL_GPUShaderCreateInfo info{};
-    info.code = (u8*)code;
-    info.code_size = codeSize;
+    info.code = code.data();
+    info.code_size = code.size();
     info.entrypoint = "main";
     info.format = shaderFormat_;
     info.stage = stage;
@@ -499,13 +494,10 @@ SDL_GPUShader* SDLGPUGraphics::loadShader(const std::string& path, SDL_GPUShader
     info.num_uniform_buffers = numUniformBuffers;
 
     SDL_GPUShader* shader = SDL_CreateGPUShader(device_, &info);
-    if (!shader)
-    {
+    if (!shader) {
         log::err("Failed to compile shader {}:\n{}", path, SDL_GetError());
-        SDL_free(code);
         return nullptr;
     }
-    SDL_free(code);
 
     shaders_.push_back(shader);
     return shader;

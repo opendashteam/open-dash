@@ -68,6 +68,18 @@ void Window::setResizeCallback(ResizeCallback callback)
     resizeCallback = std::move(callback);
 }
 
+static bool assetsDirectoryDirty = true;
+static std::filesystem::path assetsDirectory;
+
+const std::filesystem::path& Window::getAssetsDirectoryPath()
+{
+    if (assetsDirectoryDirty) {
+        assetsDirectory = std::filesystem::path(SDL_GetBasePath()) / "assets";
+        assetsDirectoryDirty = false;
+    }
+    return assetsDirectory;
+}
+
 engine::Size Window::getPixelSize()
 {
     int w = 0, h = 0;

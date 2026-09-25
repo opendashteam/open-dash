@@ -24,6 +24,11 @@ std::unique_ptr<Application> Application::create(std::string_view title, int wid
 
 bool Application::init(std::string_view title, int width, int height)
 {
+    // claim ownership of singleton managers and stuff
+    // (asset manager needs to be created first)
+    assetManager_ = AssetManager::create();
+    if (!assetManager_) return false;
+
     if (!platform::Window::init())
         return false;
 
@@ -35,10 +40,6 @@ bool Application::init(std::string_view title, int width, int height)
         platform::Window::quit();
         return false;
     }
-
-    // claim ownership of singleton managers and stuff
-    assetManager_ = AssetManager::create();
-    if (!assetManager_) return false;
 
     director_ = Director::create();
     if (!director_) return false;
