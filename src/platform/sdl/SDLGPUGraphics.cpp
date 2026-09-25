@@ -477,6 +477,10 @@ SDL_GPUShader* SDLGPUGraphics::loadShader(const std::string& path, SDL_GPUShader
         return nullptr;
     }
 
+    rawPath = SDL_GetCurrentDirectory() + rawPath;
+
+    log::info("loading shader: {}", rawPath);
+
     size_t codeSize;
     void* code = SDL_LoadFile(rawPath.c_str(), &codeSize);
     if (!code)
