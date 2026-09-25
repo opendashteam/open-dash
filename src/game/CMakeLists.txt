@@ -6,12 +6,14 @@ target_link_libraries(OpenDash PRIVATE
     opendash_engine
 )
 
-add_custom_command(TARGET OpenDash POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_RUNTIME_DLLS:OpenDash>
-        $<TARGET_FILE_DIR:OpenDash>
-    COMMAND_EXPAND_LISTS
-)
+if(TARGET_PLATFORM STREQUAL "WINDOWS")
+    add_custom_command(TARGET OpenDash POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_RUNTIME_DLLS:OpenDash>
+            $<TARGET_FILE_DIR:OpenDash>
+        COMMAND_EXPAND_LISTS
+    )
+endif()
 
 target_include_directories(OpenDash PRIVATE
     ${CMAKE_SOURCE_DIR}/src/third_party

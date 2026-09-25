@@ -23,12 +23,14 @@ FetchContent_MakeAvailable(glm)
 
 set(COMMON_LIBRARIES glm::glm-header-only fmt::fmt)
 
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(TARGET_PLATFORM "WINDOWS")
-elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(TARGET_PLATFORM "LINUX")
-elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(TARGET_PLATFORM "MAC")
+else()
+    message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
 endif()
 
 if (NOT DEFINED MSVC)
