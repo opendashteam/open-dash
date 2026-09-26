@@ -63,6 +63,14 @@ public:
         const glm::mat4& positionTransform,
         u32 count
     ) = 0;
+
+    virtual void drawCircle(
+        const glm::mat4& positionTransform,
+        float radius,
+        const engine::Color4F& color,
+        bool fill,
+        bool blending
+    ) = 0;
 };
 
 };

@@ -1,5 +1,5 @@
 #ifndef __cplusplus
-#define GLSL
+    #define GLSL
 #endif
 
 #if defined(GLSL) && !defined(VERTEX_SHADER) && !defined(FRAGMENT_SHADER)

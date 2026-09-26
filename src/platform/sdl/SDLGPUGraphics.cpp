@@ -43,16 +43,18 @@ bool SDLGPUGraphics::beginDraw()
     commandBuffer_ = SDL_AcquireGPUCommandBuffer(device_);
 
     u32 w, h;
-    SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer_, window_, &swapchainTexture_, &w, &h);
 
-    if (!swapchainTexture_) {
+    SDL_GPUTexture* swapchainTexture;
+    SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer_, window_, &swapchainTexture, &w, &h);
+
+    if (!swapchainTexture) {
         SDL_CancelGPUCommandBuffer(commandBuffer_);
         commandBuffer_ = nullptr;
         return false;
     }
 
     SDL_GPUColorTargetInfo colorTargetInfo{};
-    colorTargetInfo.texture = swapchainTexture_;
+    colorTargetInfo.texture = swapchainTexture;
     colorTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
     colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
     colorTargetInfo.clear_color = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -354,6 +356,11 @@ void SDLGPUGraphics::drawSpriteBatch(
     SDL_DrawGPUIndexedPrimitives(renderPass_, count * 6, 1, 0, 0, 0);
 }
 
+void SDLGPUGraphics::drawCircle(const glm::mat4 &positionTransform, float radius, const engine::Color4F &color, bool fill, bool blending)
+{
+
+}
+
 struct SpritePropertiesUBO {
     std140_mat4 positionTransform;
     std140_mat3 textureTransform;
@@ -371,9 +378,7 @@ void SDLGPUGraphics::drawSprite(
 
     auto texture = (TextureContainer*)raw;
 
-    glm::vec4 colorVector = {color.r, color.g, color.b, color.a};
-
-    SpritePropertiesUBO ubo = { positionTransform, textureTransform, colorVector };
+    SpritePropertiesUBO ubo = { positionTransform, textureTransform, Color4F::toVector(color) };
 
     SDL_PushGPUVertexUniformData(commandBuffer_, UNIFORM_SLOT_SPRITE_PROPERTIES, &ubo, sizeof(ubo));
     SDL_BindGPUGraphicsPipeline(renderPass_, defaultSpritePipeline_);
@@ -505,13 +510,13 @@ SDL_GPUShader* SDLGPUGraphics::loadShader(const std::string& path, SDL_GPUShader
 
 static u32 getVertexFormatType(SDL_GPUVertexElementFormat format) {
     switch (format) {
-    case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT:  return sizeof(float) * 1;
-    case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2: return sizeof(float) * 2;
-    case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3: return sizeof(float) * 3;
-    case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4: return sizeof(float) * 4;
-    default:
-        assert(false && "vertex format unknown");
-    }
+        case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT:  return sizeof(float) * 1;
+        case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2: return sizeof(float) * 2;
+        case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3: return sizeof(float) * 3;
+        case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4: return sizeof(float) * 4;
+        default:
+            assert(false && "vertex format unknown");
+        }
     return 0;
 }
 
@@ -703,11 +708,11 @@ SDL_GPUBuffer* SDLGPUGraphics::createStaticGPUBuffer(u32 size, SDL_GPUBufferUsag
 
 static inline SDL_GPUSamplerAddressMode toSDLAddressMode(WrapMode mode) {
     switch (mode) {
-    case WrapMode::Clamp: return SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
-    case WrapMode::Repeat: return SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
-    case WrapMode::MirroredRepeat: return SDL_GPU_SAMPLERADDRESSMODE_MIRRORED_REPEAT;
-    default:
-        assert(false && "invalid WrapMode");
+        case WrapMode::Clamp: return SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+        case WrapMode::Repeat: return SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+        case WrapMode::MirroredRepeat: return SDL_GPU_SAMPLERADDRESSMODE_MIRRORED_REPEAT;
+        default:
+            assert(false && "invalid WrapMode");
     }
     return SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
 }
