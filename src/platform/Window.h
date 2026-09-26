@@ -21,11 +21,11 @@ enum class GraphicsLibrary {
 
 inline const char* graphicsLibraryToString(GraphicsLibrary lib) {
     switch (lib) {
-    case GraphicsLibrary::Vulkan: return "Vulkan";
-    case GraphicsLibrary::Metal: return "Metal";
-    case GraphicsLibrary::Direct3D12: return "Direct3D 12";
-    default:
-        return "<invalid>";
+        case GraphicsLibrary::Vulkan: return "Vulkan";
+        case GraphicsLibrary::Metal: return "Metal";
+        case GraphicsLibrary::Direct3D12: return "Direct3D 12";
+        default:
+            return "<invalid>";
     }
 }
 

@@ -10,7 +10,7 @@ void ExampleScene::update(float dt) {
         // exampleSprite_->rotateBy((180.0f / constants::player::kRotationDuration) * dt);
     }
     if (batchTest_) {
-        batchTest_->rotateBy((180.0f / constants::player::kRotationDuration) * dt * 0.128);
+        batchTest_->rotateBy((180.0f / constants::player::kRotationDuration) * dt);
     }
 }
 

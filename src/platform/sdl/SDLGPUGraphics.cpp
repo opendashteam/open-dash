@@ -703,11 +703,11 @@ SDL_GPUBuffer* SDLGPUGraphics::createStaticGPUBuffer(u32 size, SDL_GPUBufferUsag
 
 static inline SDL_GPUSamplerAddressMode toSDLAddressMode(WrapMode mode) {
     switch (mode) {
-    case WrapMode::Clamp: return SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
-    case WrapMode::Repeat: return SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
-    case WrapMode::MirroredRepeat: return SDL_GPU_SAMPLERADDRESSMODE_MIRRORED_REPEAT;
-    default:
-        assert(false && "invalid WrapMode");
+        case WrapMode::Clamp: return SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+        case WrapMode::Repeat: return SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+        case WrapMode::MirroredRepeat: return SDL_GPU_SAMPLERADDRESSMODE_MIRRORED_REPEAT;
+        default:
+            assert(false && "invalid WrapMode");
     }
     return SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
 }
