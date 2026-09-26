@@ -1,5 +1,6 @@
 #include "ExampleScene.h"
 #include "constants.h"
+#include "../engine/nodes/Label.h"
 
 namespace opendash
 {
@@ -40,6 +41,10 @@ bool ExampleScene::init() {
 
     exampleSprite_ = addChild(Sprite::createWithFrame("GJ_levelComplete_001.png"));
     exampleSprite_->setPosition(Director::get()->getVisibleSize() / 2);
+
+    auto label = addChild(Label::createBigFont("Now with text!"));
+    label->setPosition(Point(Director::get()->getVisibleSize() / 2) - Point(0, 40));
+    label->setAnchorPoint(0.5, 0.5);
 
     auto ncs = exampleSprite_->addChild(Sprite::createWithFrame("ncs_med_001.png"));
 

@@ -175,6 +175,20 @@ Texture* AssetManager::fetchTexture(const std::filesystem::path& path)
     return getCachedTexture(path);
 }
 
+BMFont* AssetManager::fetchFont(const std::string& name)
+{
+    auto it = fonts_.find(name);
+    if (it != fonts_.end())
+        return it->second;
+
+    BMFont* font = BMFont::load(getFullPath(name + "-uhd.fnt"));
+    if (!font)
+        return nullptr;
+
+    fonts_[name] = font;
+    return font;
+}
+
 bool AssetManager::init()
 {
     return true;

@@ -207,6 +207,8 @@ struct Point {
 
     constexpr Point(const Point& other) : x(other.x), y(other.y) {}
 
+    constexpr explicit Point(const Size& other) : x(other.width), y(other.height) {}
+
     bool operator==(const Point& other) const = default;
 
     Point operator+(const Point& right) const {

@@ -6,7 +6,7 @@
 #include "core/Singleton.h"
 #include "Texture.h"
 #include "core/SpriteFrame.h"
-#include "utilities/log.h"
+#include "core/BMFont.h"
 
 namespace opendash::engine
 {
@@ -43,6 +43,8 @@ public:
 
     Texture* fetchTexture(const std::filesystem::path& path);
 
+    BMFont* fetchFont(const std::string& name);
+
     inline const std::unordered_map<std::string, SpriteFrame*>& getSpriteFrames() const {
         return spriteFrames_;
     }
@@ -60,6 +62,8 @@ private:
     std::unordered_map<std::filesystem::path, Texture*, PathHash> cachedTextures_;
 
     std::unordered_map<std::string, SpriteFrame*> spriteFrames_;
+
+    std::unordered_map<std::string, BMFont*> fonts_;
 };
 
 }

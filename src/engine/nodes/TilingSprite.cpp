@@ -1,6 +1,6 @@
 #include "TilingSprite.h"
 #include "../AssetManager.h"
-#include "../core/Director.h"
+#include "../utilities/log.h"
 
 namespace opendash::engine
 {
