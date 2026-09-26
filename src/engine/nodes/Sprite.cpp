@@ -1,7 +1,6 @@
 #include "Sprite.h"
 #include "../AssetManager.h"
 #include "../utilities/log.h"
-#include "../core/Director.h"
 namespace opendash::engine
 {
 

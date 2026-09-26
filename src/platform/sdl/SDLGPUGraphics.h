@@ -58,6 +58,14 @@ public:
         engine::u32 count
     );
 
+    virtual void drawCircle(
+        const glm::mat4& positionTransform,
+        float radius,
+        const engine::Color4F& color,
+        bool fill,
+        bool blending
+    );
+
 public:
     static SDLGPUGraphics* create(SDL_Window* window, GraphicsLibrary library);
 
@@ -149,7 +157,6 @@ private:
 
     // DRAW PASS VARIABLES //
     SDL_GPUCommandBuffer* commandBuffer_ = nullptr;
-    SDL_GPUTexture* swapchainTexture_ = nullptr;
     SDL_GPURenderPass* renderPass_ = nullptr;
 };
 

@@ -105,6 +105,10 @@ struct Color4F {
         };
     }
 
+    static glm::vec4 toVector(const Color4F& color) {
+        return {color.r, color.g, color.b, color.a};
+    };
+
     static const Color4F WHITE;
     static const Color4F BLACK;
     static const Color4F RED;
