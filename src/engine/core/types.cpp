@@ -4,7 +4,7 @@
 namespace opendash::engine
 {
 
-Size Size::inUnits() const {
+Size Size::toPoints() const {
     return *this * Director::get()->getInvertedContentScaleFactor();
 }
 
@@ -12,7 +12,7 @@ Size Size::inPixels() const {
     return *this * Director::get()->getContentScaleFactor();
 }
 
-Point Point::inUnits() const {
+Point Point::toPoints() const {
     return *this * Director::get()->getInvertedContentScaleFactor();
 }
 

@@ -53,6 +53,9 @@ private:
 
     bool spriteSizeTransformDirty_ = true;
     glm::mat4 spriteSizeTransform_;
+
+    // cache this
+    TextureWrapParameters wrapParameters_ = { WrapMode::Repeat, WrapMode::Repeat };
 };
 
 }

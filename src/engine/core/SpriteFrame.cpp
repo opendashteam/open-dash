@@ -64,7 +64,7 @@ const glm::mat4& SpriteFrame::getPositionTransform() {
     if (positionTransformCreated_)
         return positionTransform_;
 
-    positionTransform_ = glm::scale(glm::mat4(1.0f), glm::vec3(spriteSourceSize_.inUnits().toGLM(), 1.0f));
+    positionTransform_ = glm::scale(glm::mat4(1.0f), glm::vec3(spriteSourceSize_.toPoints().toGLM(), 1.0f));
     positionTransformCreated_ = true;
 
     // TODO: Factor in spriteOffset_ into the positionTransform_

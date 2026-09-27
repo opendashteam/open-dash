@@ -59,12 +59,18 @@ void TilingSprite::setTileScaleY(float tileScaleY) {
 void TilingSprite::setMirroredRepeatX(bool mirroredX) {
     if (mirroredX == mirroredRepeatX_) return;
     mirroredRepeatX_ = mirroredX;
+
+    wrapParameters_.u = mirroredRepeatX_ ? WrapMode::MirroredRepeat : WrapMode::Repeat;
+
     uvDirty_ = true;
 }
 
 void TilingSprite::setMirroredRepeatY(bool mirroredY) {
     if (mirroredY == mirroredRepeatY_) return;
     mirroredRepeatY_ = mirroredY;
+
+    wrapParameters_.v = mirroredRepeatY_ ? WrapMode::MirroredRepeat : WrapMode::Repeat;
+
     uvDirty_ = true;
 }
 
@@ -112,7 +118,7 @@ bool TilingSprite::initWithPath(const std::filesystem::path &path) {
         return false;
     }
 
-    textureWorldSize_ = texture_->getSize().inUnits();
+    textureWorldSize_ = texture_->getSize().toPoints();
     setContentSize(textureWorldSize_);
     return true;
 }
@@ -135,12 +141,7 @@ void TilingSprite::draw(Graphics *gfx) {
 
     glm::mat4 posTransform = getWorldTransform() * spriteSizeTransform_;
 
-    TextureWrapParameters wrapParameters {
-        mirroredRepeatX_ ? WrapMode::MirroredRepeat : WrapMode::Repeat,
-        mirroredRepeatY_ ? WrapMode::MirroredRepeat : WrapMode::Repeat
-    };
-
-    gfx->drawSprite(texture_, posTransform, texTransform, renderColor_, wrapParameters);
+    gfx->drawSprite(texture_, posTransform, texTransform, renderColor_, wrapParameters_);
 }
 
 bool TilingSprite::init() {

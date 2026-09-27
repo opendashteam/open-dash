@@ -196,7 +196,7 @@ struct Size {
         return { width, height };
     }
 
-    Size inUnits() const;
+    Size toPoints() const;
 
     Size inPixels() const;
 };
@@ -271,7 +271,7 @@ struct Point {
         return { x, y };
     }
 
-    Point inUnits() const;
+    Point toPoints() const;
 
     Point inPixels() const;
 };

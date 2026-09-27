@@ -57,9 +57,9 @@ void Label::draw(Graphics* gfx) {
             float yOffset = font_->getLineHeight() - glyph->offset.y;
             Point offset { glyph->offset.x, yOffset - glyph->crop.size.height };
 
-            glm::vec2 position = (pos + offset).inUnits().toGLM();
+            glm::vec2 position = (pos + offset).toPoints().toGLM();
             auto glyphTransform = glm::translate(glm::mat4(1.0f), { position, 0 });
-            glyphTransform = glm::scale(glyphTransform, { glyph->crop.size.inUnits().toGLM(), 0 });
+            glyphTransform = glm::scale(glyphTransform, { glyph->crop.size.toPoints().toGLM(), 0 });
 
             gfx->drawSprite(
                 font_->getTexture(),
@@ -116,7 +116,7 @@ void Label::updateContentSize() {
         ptr += size;
     }
 
-    setContentSize(Size(std::max(width, maxWidth), height).inUnits());
+    setContentSize(Size(std::max(width, maxWidth), height).toPoints());
 }
 
 std::unique_ptr<Label> Label::create(const std::string& text, const std::string& fontName) {

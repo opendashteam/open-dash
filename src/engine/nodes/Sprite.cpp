@@ -89,8 +89,8 @@ bool Sprite::init() {
 
 void Sprite::setupSizes(const Size &contentPixels, const Size &quadPixels)
 {
-    setContentSize(contentPixels.inUnits());
-    internalSpriteTransform_ = glm::scale(glm::mat4(1.0f), glm::vec3(quadPixels.inUnits().toGLM(), 1.0f));
+    setContentSize(contentPixels.toPoints());
+    internalSpriteTransform_ = glm::scale(glm::mat4(1.0f), glm::vec3(quadPixels.toPoints().toGLM(), 1.0f));
 }
 
 }
