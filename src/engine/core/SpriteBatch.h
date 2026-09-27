@@ -25,26 +25,26 @@ public:
         u32 index,
         const glm::mat4& positionTransform,
         const glm::mat3& textureTransform,
-        const Color4F& color
+        const Color4F& color = {1, 1, 1, 1}
     );
 
     void setSpriteFrame(
         u32 index,
         SpriteFrame* spriteFrame,
-        const Color4F& color,
-        const glm::mat4& positionTransform
+        const glm::mat4& positionTransform,
+        const Color4F& color = {1, 1, 1, 1}
     );
 
     void setSpriteFrame(
         u32 index,
         SpriteFrame* spriteFrame,
-        const Color4F& color,
+        const Color4F& color = {1, 1, 1, 1},
         const glm::vec2& position = {0, 0}
     );
 
     void draw(Texture* texture, const glm::mat4& transform, const Color4F& globalColor = { 1, 1, 1, 1 });
 
-    static std::unique_ptr<SpriteBatch> create(u32 capacity = 32);
+    static std::unique_ptr<SpriteBatch> create();
 
 private:
     InternalSpriteBatch internal_;

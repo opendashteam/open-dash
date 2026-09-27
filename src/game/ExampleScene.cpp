@@ -25,10 +25,8 @@ bool ExampleScene::init() {
     // Always call addChild first when creating a node
     // to not have to deal with a stale pointer after the 
     // unique_ptr's move operation
-    /*
     exampleSprite_ = addChild(Sprite::create("cube.png"));
     exampleSprite_->setPosition(Director::get()->getVisibleSize() / 2);
-    */
 
     tilingSprite_ = addChild(TilingSprite::create("cube.png"));
     tilingSprite_->setContentSize(Director::get()->getVisibleSize());
@@ -44,8 +42,8 @@ bool ExampleScene::init() {
     exampleSprite_->setPosition(Director::get()->getVisibleSize() / 2);
     exampleSprite_->setColor(255, 0, 0);
 
-    auto label = addChild(Label::createBigFont("Now with ....."));
-    label->setPosition(Point(Director::get()->getVisibleSize() / 2) - Point(0, 40));
+    auto label = addChild(Label::createBigFont("Now with\nmultiline centered text!"));
+    label->setPosition(Point(Director::get()->getVisibleSize() / 2) - Point(0, 60));
     label->setAnchorPoint(0.5, 0.5);
     label->setColor(255, 0, 0);
 

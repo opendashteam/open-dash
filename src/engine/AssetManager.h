@@ -43,7 +43,7 @@ public:
 
     Texture* fetchTexture(const std::filesystem::path& path);
 
-    BMFont* fetchFont(const std::string& name);
+    BMFont* fetchFont(std::string_view name);
 
     inline const std::unordered_map<std::string, SpriteFrame*>& getSpriteFrames() const {
         return spriteFrames_;

@@ -16,6 +16,7 @@ void SpriteBatch::resize(u32 newSize) {
     if (newSize > capacity_) {
         if (capacity_ == 0)
             capacity_ = 1;
+        // might not be smart
         while (capacity_ < newSize)
             capacity_ *= 2;
 
@@ -40,8 +41,8 @@ void SpriteBatch::setSprite(
 void SpriteBatch::setSpriteFrame(
     u32 index,
     SpriteFrame* spriteFrame,
-    const Color4F& color,
-    const glm::mat4& positionTransform
+    const glm::mat4& positionTransform,
+    const Color4F& color
 ) {
     setSprite(
         index,
@@ -59,7 +60,7 @@ void SpriteBatch::setSpriteFrame(
 ) {
     glm::mat4 transform(1.0f);
     transform = glm::translate(transform, glm::vec3(position, 0.0f));
-    setSpriteFrame(index, spriteFrame, color, transform);
+    setSpriteFrame(index, spriteFrame, transform, color);
 }
 
 void SpriteBatch::draw(Texture* texture, const glm::mat4& transform, const Color4F& color) {
@@ -70,17 +71,12 @@ void SpriteBatch::draw(Texture* texture, const glm::mat4& transform, const Color
     gfx->drawSpriteBatch(internal_, texture->getInternalObject(), transform, color, size_);
 }
 
-std::unique_ptr<SpriteBatch> SpriteBatch::create(u32 capacity) {
-    assert(capacity > 0);
-
+std::unique_ptr<SpriteBatch> SpriteBatch::create() {
     Graphics* gfx = platform::Window::getGraphics();
     InternalSpriteBatch internal = gfx->spriteBatchCreate();
-    gfx->spriteBatchResize(internal, capacity);
 
     auto ret = std::unique_ptr<SpriteBatch>(new SpriteBatch);
-
     ret->internal_ = internal;
-    ret->capacity_ = capacity;
 
     return ret;
 }
