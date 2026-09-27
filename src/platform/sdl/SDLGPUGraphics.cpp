@@ -298,10 +298,16 @@ static TextureWrapParameters spriteBatchWrapParams = {
     WrapMode::Clamp
 };
 
+struct SpriteBatchPropertiesUBO {
+    std140_mat4 positionTransform;
+    std140_vec4 globalColor;
+};
+
 void SDLGPUGraphics::drawSpriteBatch(
     InternalSpriteBatch raw,
     InternalTexture rawTexture,
     const glm::mat4& positionTransform,
+    const engine::Color4F& globalColor,
     u32 count
 ) {
     auto batch = (SpriteBatchContainer*)raw;
@@ -347,8 +353,10 @@ void SDLGPUGraphics::drawSpriteBatch(
 
     if (!textureBinding.sampler)
         return;
+
+    SpriteBatchPropertiesUBO ubo = { positionTransform, Color4F::toVector(globalColor) };
     
-    SDL_PushGPUVertexUniformData(commandBuffer_, UNIFORM_SLOT_SPRITE_BATCH_PROPERTIES, &positionTransform, sizeof(positionTransform));
+    SDL_PushGPUVertexUniformData(commandBuffer_, UNIFORM_SLOT_SPRITE_BATCH_PROPERTIES, &ubo, sizeof(ubo));
 
     SDL_BindGPUVertexBuffers(renderPass_, 0, &vertexBinding, 1);
     SDL_BindGPUIndexBuffer(renderPass_, &indexBinding, SDL_GPU_INDEXELEMENTSIZE_32BIT);

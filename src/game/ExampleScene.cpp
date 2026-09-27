@@ -11,7 +11,7 @@ void ExampleScene::update(float dt) {
         // exampleSprite_->rotateBy((180.0f / constants::player::kRotationDuration) * dt);
     }
     if (batchTest_) {
-        batchTest_->rotateBy((180.0f / constants::player::kRotationDuration) * dt);
+        batchTest_->rotateBy((180.0f / constants::player::kRotationDuration) * dt * 0.128);
     }
 }
 
@@ -34,17 +34,20 @@ bool ExampleScene::init() {
     tilingSprite_->setContentSize(Director::get()->getVisibleSize());
     tilingSprite_->setPosition(Director::get()->getVisibleSize() / 2);
     tilingSprite_->setAnchorPoint({.5f, .5f});
-    tilingSprite_->setOpacity(80);
+    tilingSprite_->setColor(255, 0, 0);
+    tilingSprite_->setOpacity(60);
 
     batchTest_ = addChild(SpriteBatchTest::create());
     batchTest_->setPosition(Director::get()->getVisibleSize() / 2);
 
     exampleSprite_ = addChild(Sprite::createWithFrame("GJ_levelComplete_001.png"));
     exampleSprite_->setPosition(Director::get()->getVisibleSize() / 2);
+    exampleSprite_->setColor(255, 0, 0);
 
-    auto label = addChild(Label::createBigFont("Now with text!"));
+    auto label = addChild(Label::createBigFont("Now with ....."));
     label->setPosition(Point(Director::get()->getVisibleSize() / 2) - Point(0, 40));
     label->setAnchorPoint(0.5, 0.5);
+    label->setColor(255, 0, 0);
 
     auto ncs = exampleSprite_->addChild(Sprite::createWithFrame("ncs_med_001.png"));
 

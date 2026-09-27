@@ -42,7 +42,7 @@ public:
         const glm::vec2& position = {0, 0}
     );
 
-    void draw(Texture* texture, const glm::mat4& transform);
+    void draw(Texture* texture, const glm::mat4& transform, const Color4F& globalColor = { 1, 1, 1, 1 });
 
     static std::unique_ptr<SpriteBatch> create(u32 capacity = 32);
 

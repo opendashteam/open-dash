@@ -11,6 +11,7 @@ struct SpriteProperties
 struct SpriteBatchProperties
 {
     float4x4 modelMatrix;
+    float4 globalColor;
 };
 
 struct main0_out
@@ -32,7 +33,7 @@ vertex main0_out main0(main0_in in [[stage_in]], constant SpriteProperties& _19 
     main0_out out = {};
     out.gl_Position = (_19.viewProjection * _25.modelMatrix) * float4(in.a_position, 0.0, 1.0);
     out.v_uv = in.a_texCoord;
-    out.v_color = in.a_color;
+    out.v_color = in.a_color * _25.globalColor;
     return out;
 }
 

@@ -62,12 +62,12 @@ void SpriteBatch::setSpriteFrame(
     setSpriteFrame(index, spriteFrame, color, transform);
 }
 
-void SpriteBatch::draw(Texture* texture, const glm::mat4& transform) {
+void SpriteBatch::draw(Texture* texture, const glm::mat4& transform, const Color4F& color) {
     if (size_ == 0)
         return;
 
     Graphics* gfx = platform::Window::getGraphics();
-    gfx->drawSpriteBatch(internal_, texture->getInternalObject(), transform, size_);
+    gfx->drawSpriteBatch(internal_, texture->getInternalObject(), transform, color, size_);
 }
 
 std::unique_ptr<SpriteBatch> SpriteBatch::create(u32 capacity) {

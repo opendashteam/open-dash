@@ -1,13 +1,13 @@
 #pragma once
 
-#include "Node.h"
+#include "ColorNode.h"
 
 #include "../core/BMFont.h"
 
 namespace opendash::engine
 {
 
-class Label : public Node
+class Label : public ColorNode
 {
 public:
     void setText(const std::string& text);

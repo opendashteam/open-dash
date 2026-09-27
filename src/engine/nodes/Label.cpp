@@ -65,7 +65,7 @@ void Label::draw(Graphics* gfx) {
                 font_->getTexture(),
                 worldTransform * glyphTransform,
                 glyph->textureTransform,
-                {1, 1, 1, 1},
+                renderColor_,
                 sharedLabelWrapParameters
             );
             pos.x += glyph->advance;

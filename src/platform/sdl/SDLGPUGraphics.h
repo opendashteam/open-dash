@@ -55,6 +55,7 @@ public:
         engine::InternalSpriteBatch raw,
         engine::InternalTexture rawTexture,
         const glm::mat4& positionTransform,
+        const engine::Color4F& globalColor,
         engine::u32 count
     );
 

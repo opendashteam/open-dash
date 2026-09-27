@@ -61,6 +61,7 @@ public:
         InternalSpriteBatch raw,
         InternalTexture rawTexture,
         const glm::mat4& positionTransform,
+        const Color4F& globalColor,
         u32 count
     ) = 0;
 
