@@ -4,6 +4,7 @@
 #include <set>
 #include "../../../assets/shaders/common.h"
 #include "../../engine/AssetManager.h"
+#include "../../engine/core/macros.h"
 
 using namespace opendash::engine;
 
@@ -31,6 +32,7 @@ SDLGPUGraphics::~SDLGPUGraphics()
         release(spriteBatchPipeline_);
     if (quadVertexBuffer_)
         release(quadVertexBuffer_);
+    // TODO: release circle wave vertex buffers
 
     SDL_ReleaseWindowFromGPUDevice(device_, window_);
     SDL_DestroyGPUDevice(device_);
@@ -150,7 +152,7 @@ static const float quadVerticies[] = {
     0.0f, 0.0f,
     0.0f, 1.0f,
     1.0f, 0.0f,
-    1.0f, 1.0f
+    1.0f, 0.0f
 };
 
 struct SpriteQuadVertex {
@@ -179,11 +181,11 @@ struct SpriteBatchContainer {
     u32 dirtySpriteRangeEnd;
 };
 
-engine::InternalSpriteBatch SDLGPUGraphics::spriteBatchCreate() {
-    return (engine::InternalSpriteBatch)new SpriteBatchContainer;
+InternalSpriteBatch SDLGPUGraphics::spriteBatchCreate() {
+    return (InternalSpriteBatch)new SpriteBatchContainer;
 }
 
-void SDLGPUGraphics::spriteBatchResize(engine::InternalSpriteBatch raw, engine::u32 capacity) {
+void SDLGPUGraphics::spriteBatchResize(InternalSpriteBatch raw, u32 capacity) {
     auto batch = (SpriteBatchContainer*)raw;
     if (capacity <= batch->capacity)
         return;
@@ -282,7 +284,7 @@ void SDLGPUGraphics::spriteBatchSetSprite(
     }
 }
 
-void SDLGPUGraphics::spriteBatchDestroy(engine::InternalSpriteBatch raw) {
+void SDLGPUGraphics::spriteBatchDestroy(InternalSpriteBatch raw) {
     auto batch = (SpriteBatchContainer*)raw;
     if (batch->capacity == 0)
         return;
@@ -364,9 +366,40 @@ void SDLGPUGraphics::drawSpriteBatch(
     SDL_DrawGPUIndexedPrimitives(renderPass_, count * 6, 1, 0, 0, 0);
 }
 
-void SDLGPUGraphics::drawCircle(const glm::mat4 &positionTransform, float radius, const engine::Color4F &color, bool fill, bool blending)
-{
+struct CircleUBO {
+    std140_mat4 positionTransform;
+    std140_vec4 color;
+};
 
+void SDLGPUGraphics::drawFilledCircle(const glm::mat4 &positionTransform, const Color4F &color, float radius, u32 segments, bool blending)
+{
+    assert(commandBuffer_);
+
+    // TODO: cache points per segment count lazily
+    std::vector<Point> points{};
+
+    const float radiansPerSegment = 2.0f * CC_PI / segments;
+    for (u32 i = 0; i < segments; i++) {
+        float radians = i * radiansPerSegment;
+
+        float x = radius * cosf(radians);
+        float y = radius * sinf(radians);
+
+        points.push_back({x, y});
+        points.push_back({0.0f, 0.0f}); // Zigzag for triangle-strip to work
+    }
+    points.push_back(points[0]);
+
+    CircleUBO ubo{ positionTransform, Color4F::toVector(color) };
+
+    SDL_PushGPUVertexUniformData(commandBuffer_, UNIFORM_SLOT_CIRCLE_UBO, &ubo, sizeof(ubo));
+    SDL_BindGPUGraphicsPipeline(renderPass_, solidPipeline_);
+
+    SDL_GPUBufferBinding vertexBinding{};
+    vertexBinding.buffer = createStaticGPUBuffer(points.size() * sizeof(Point), SDL_GPU_BUFFERUSAGE_VERTEX, (void*)points.data());
+
+    SDL_BindGPUVertexBuffers(renderPass_, 0, &vertexBinding, 1);
+    SDL_DrawGPUPrimitives(renderPass_, points.size(), 1, 0, 0);
 }
 
 struct SpritePropertiesUBO {
@@ -376,11 +409,11 @@ struct SpritePropertiesUBO {
 };
 
 void SDLGPUGraphics::drawSprite(
-    engine::InternalTexture raw,
+    InternalTexture raw,
     const glm::mat4& positionTransform,
     const glm::mat3& textureTransform,
-    const engine::Color4F& color,
-    const engine::TextureWrapParameters& wrapParams
+    const Color4F& color,
+    const TextureWrapParameters& wrapParams
 ) {
     assert(commandBuffer_);
 
@@ -482,12 +515,12 @@ SDL_GPUShader* SDLGPUGraphics::loadShader(const std::string& path, SDL_GPUShader
 {
     std::string rawPath;
     switch (graphicsLibrary_) {
-    case GraphicsLibrary::Vulkan: rawPath = "shaders/spv/" + path + ".spv"; break;
-    case GraphicsLibrary::Direct3D12: rawPath = "shaders/dxil/" + path + ".dxil"; break;
-    case GraphicsLibrary::Metal: rawPath = "shaders/msl/" + path + ".msl"; break;
-    default:
-        assert(false && "invalid graphics library");
-        return nullptr;
+        case GraphicsLibrary::Vulkan: rawPath = "shaders/spv/" + path + ".spv"; break;
+        case GraphicsLibrary::Direct3D12: rawPath = "shaders/dxil/" + path + ".dxil"; break;
+        case GraphicsLibrary::Metal: rawPath = "shaders/msl/" + path + ".msl"; break;
+        default:
+            assert(false && "invalid graphics library");
+            return nullptr;
     }
 
     std::vector<u8> code;
@@ -586,9 +619,11 @@ SDL_GPUGraphicsPipeline* SDLGPUGraphics::createGraphicsPipeline(
 
 bool SDLGPUGraphics::setupPipelines()
 {
-    SDL_GPUShader* batchVertexShader  = loadShader("spriteBatch.vert", SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
-    SDL_GPUShader* spriteVertexShader = loadShader("sprite.vert",      SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
-    SDL_GPUShader* fragmentShader     = loadShader("sprite.frag",      SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0);
+    SDL_GPUShader* batchVertexShader    = loadShader("spriteBatch.vert", SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
+    SDL_GPUShader* spriteVertexShader   = loadShader("sprite.vert",      SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
+    SDL_GPUShader* fragmentShader       = loadShader("sprite.frag",      SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0);
+    SDL_GPUShader* solidVertexShader   = loadShader("solid.vert",      SDL_GPU_SHADERSTAGE_VERTEX,   0, 1);
+    SDL_GPUShader* solidFragmentShader = loadShader("solid.frag",      SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0);
 
     if (
         !batchVertexShader ||
@@ -601,7 +636,9 @@ bool SDLGPUGraphics::setupPipelines()
 
     defaultSpritePipeline_ = createGraphicsPipeline(
         SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP,
-        { {0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2} },
+        {
+            {0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2}
+        },
         spriteVertexShader,
         fragmentShader
     );
@@ -617,18 +654,31 @@ bool SDLGPUGraphics::setupPipelines()
         fragmentShader
     );
 
+    solidPipeline_ = createGraphicsPipeline(
+        SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP,
+        {
+            {0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2}
+        },
+        solidVertexShader,
+        solidFragmentShader
+    );
+
     releaseAllShaders();
-    return defaultSpritePipeline_ != nullptr || spriteBatchPipeline_ != nullptr;
+
+    return
+        defaultSpritePipeline_ != nullptr &&
+        spriteBatchPipeline_   != nullptr &&
+        solidPipeline_        != nullptr;
 }
 
-SDL_GPUBuffer* SDLGPUGraphics::createGPUBuffer(engine::u32 size, SDL_GPUBufferUsageFlags usage) {
+SDL_GPUBuffer* SDLGPUGraphics::createGPUBuffer(u32 size, SDL_GPUBufferUsageFlags usage) {
     SDL_GPUBufferCreateInfo info{};
     info.size = size;
     info.usage = usage;
     return SDL_CreateGPUBuffer(device_, &info);
 }
 
-SDL_GPUTransferBuffer* SDLGPUGraphics::createGPUUploadBuffer(engine::u32 size, void* data) {
+SDL_GPUTransferBuffer* SDLGPUGraphics::createGPUUploadBuffer(u32 size, void* data) {
     SDL_GPUTransferBufferCreateInfo info{};
     info.size = size;
     info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
@@ -648,9 +698,9 @@ void SDLGPUGraphics::uploadBufferData(
     SDL_GPUCommandBuffer* cbuffer,
     SDL_GPUTransferBuffer* src,
     SDL_GPUBuffer* dst,
-    engine::u32 size,
-    engine::u32 srcOffset,
-    engine::u32 dstOffset
+    u32 size,
+    u32 srcOffset,
+    u32 dstOffset
 ) {
     bool ownCBuffer = cbuffer == nullptr;
     if (ownCBuffer)
@@ -676,9 +726,9 @@ void SDLGPUGraphics::copyBuffer(
     SDL_GPUCommandBuffer* cbuffer,
     SDL_GPUBuffer* src,
     SDL_GPUBuffer* dst,
-    engine::u32 size,
-    engine::u32 srcOffset,
-    engine::u32 dstOffset
+    u32 size,
+    u32 srcOffset,
+    u32 dstOffset
 ) {
     bool ownCBuffer = cbuffer == nullptr;
     if (ownCBuffer)
@@ -725,7 +775,7 @@ static inline SDL_GPUSamplerAddressMode toSDLAddressMode(WrapMode mode) {
     return SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
 }
 
-SDL_GPUSampler* SDLGPUGraphics::fetchSampler(const engine::TextureWrapParameters& params) {
+SDL_GPUSampler* SDLGPUGraphics::fetchSampler(const TextureWrapParameters& params) {
     u32 code = params.asBitCode();
     auto it = samplers_.find(code);
     if (it != samplers_.end())

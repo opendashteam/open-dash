@@ -59,11 +59,11 @@ public:
         engine::u32 count
     );
 
-    virtual void drawCircle(
+    virtual void drawFilledCircle(
         const glm::mat4& positionTransform,
-        float radius,
         const engine::Color4F& color,
-        bool fill,
+        float radius,
+        engine::u32 segments,
         bool blending
     );
 
@@ -147,9 +147,6 @@ private:
     SDL_Window* window_ = nullptr;
     SDL_GPUDevice* device_ = nullptr;
 
-    SDL_GPUGraphicsPipeline* defaultSpritePipeline_ = nullptr;
-    SDL_GPUGraphicsPipeline* spriteBatchPipeline_ = nullptr;
-
     std::unordered_map<engine::u32, SDL_GPUSampler*> samplers_;
 
     SDL_GPUBuffer* quadVertexBuffer_ = nullptr;
@@ -159,6 +156,11 @@ private:
     // DRAW PASS VARIABLES //
     SDL_GPUCommandBuffer* commandBuffer_ = nullptr;
     SDL_GPURenderPass* renderPass_ = nullptr;
+
+    // PIPELINES //
+    SDL_GPUGraphicsPipeline* defaultSpritePipeline_ = nullptr;
+    SDL_GPUGraphicsPipeline* spriteBatchPipeline_   = nullptr;
+    SDL_GPUGraphicsPipeline* solidPipeline_         = nullptr;
 };
 
 }

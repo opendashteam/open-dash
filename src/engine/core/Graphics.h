@@ -65,11 +65,11 @@ public:
         u32 count
     ) = 0;
 
-    virtual void drawCircle(
+    virtual void drawFilledCircle(
         const glm::mat4& positionTransform,
-        float radius,
         const engine::Color4F& color,
-        bool fill,
+        float radius,
+        engine::u32 segments,
         bool blending
     ) = 0;
 };
