@@ -21,7 +21,7 @@ void Director::computeDeltaTime() {
 
 void Director::updateLayouts() {
     if (!currentScene_) {
-        layoutDirty_ = false;
+        areLayoutsDirty_ = false;
         return;
     }
 
@@ -31,7 +31,7 @@ void Director::updateLayouts() {
     });
 
     currentScene_->layout();
-    layoutDirty_ = false;
+    areLayoutsDirty_ = false;
 }
 
 void Director::tick() {
@@ -47,7 +47,7 @@ void Director::tick() {
     
     currentScene_->update(deltaTime_);
 
-    if (layoutDirty_)
+    if (areLayoutsDirty_)
         updateLayouts();
 
     currentScene_->render(gfx);

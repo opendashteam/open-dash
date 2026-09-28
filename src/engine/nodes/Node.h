@@ -30,6 +30,7 @@ public:
 
         T* raw = child.get();
         children_.push_back(std::move(child));
+        markLayoutDirty();
         return raw;
     }
 
@@ -144,6 +145,7 @@ protected:
     virtual bool init();
     void markLocalTransformDirty();
     void markWorldTransformDirty();
+    void markLayoutDirty();
 
 private:
     // To be called by Director

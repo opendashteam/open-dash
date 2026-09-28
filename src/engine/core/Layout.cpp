@@ -17,7 +17,7 @@ float getItemAlignOffset(ItemAlign align, float innerSize, float outerSize) {
 
 void Layout::dirtyLayout() {
     if (node_)
-        Director::get()->dirtyLayout();
+        Director::get()->markLayoutsDirty();
 }
 
 void Layout::recalculateMinSize() {

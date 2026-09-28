@@ -20,6 +20,10 @@ void Node::markWorldTransformDirty() {
     }
 }
 
+void Node::markLayoutDirty() {
+    Director::get()->markLayoutsDirty();
+}
+
 void Node::layout() {
     if (layout_) {
         layout_->layout();
@@ -251,7 +255,7 @@ void Node::setContentSize(const Size& contentSize)
 
     contentSize_ = contentSize;
     markLocalTransformDirty();
-    Director::get()->dirtyLayout();
+    markLayoutDirty();
 }
 
 void Node::setContentSize(float x, float y)
@@ -278,26 +282,26 @@ void Node::setVisible(bool visible)
 void Node::setAutoWidth(AutoSize autoWidth)
 {
     autoWidth_ = autoWidth;
-    Director::get()->dirtyLayout();
+    markLayoutDirty();
 }
 
 void Node::setAutoHeight(AutoSize autoHeight)
 {
     autoHeight_ = autoHeight;
-    Director::get()->dirtyLayout();
+    markLayoutDirty();
 }
 
 void Node::setLayout(std::unique_ptr<Layout> layout)
 {
     layout->setNode(this);
     layout_ = std::move(layout);
-    Director::get()->dirtyLayout();
+    markLayoutDirty();
 }
 
 void Node::setIgnoreLayout(bool ignore)
 {
     isIgnoreLayout_ = ignore;
-    Director::get()->dirtyLayout();
+    markLayoutDirty();
 }
 
 const Size& Node::getContentSize() const
