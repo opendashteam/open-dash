@@ -7,9 +7,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "../core/Graphics.h"
+#include "../core/Layout.h"
+#include <functional>
 
 namespace opendash::engine
 {
+
+using VisitChild = std::function<void(Node*)>;
 
 class Node {
 public:
@@ -59,6 +63,27 @@ public:
     virtual void setContentWidth(float contentWidth);
     virtual void setContentHeight(float contentHeight);
     virtual void setVisible(bool visible);
+    virtual void setAutoWidth(AutoSize autoWidth);
+    virtual void setAutoHeight(AutoSize autoHeight);
+    virtual void setLayout(std::unique_ptr<Layout> layout);
+    virtual void setIgnoreLayout(bool ignore);
+
+    /*
+        Items will be layed out horizontally from
+        left to right.
+    */
+    inline Layout& useRowLayout() {
+        setLayout(std::make_unique<Layout>());
+        return layout_->direction(LayoutDirection::Row);
+    }
+    /*
+        Items will be layed out vertically from
+        top to bottom.
+    */
+    inline Layout& useColumnLayout() {
+        setLayout(std::make_unique<Layout>());
+        return layout_->direction(LayoutDirection::Column);
+    }
 
     // getters
     virtual const Point& getPosition() const;
@@ -81,6 +106,10 @@ public:
     const glm::mat4& getWorldTransform();
     const glm::mat4& getLocalTransform();
     virtual bool isVisible() const;
+    virtual AutoSize getAutoWidth() const;
+    virtual AutoSize getAutoHeight() const;
+    virtual Layout* getLayout() const;
+    virtual bool isIgnoreLayout() const;
 
     // relative transformations
     virtual void rotateBy(float deltaDegrees);
@@ -94,13 +123,34 @@ public:
     virtual void scaleBy(float mod);
     virtual void scaleBy(Point mod);
 
+    // First the node, then its children
+    void traversePreorder(VisitChild visitFn);
+    // First the node's children, then the node
+    void traversePostorder(VisitChild visitFn);
+
     // computation
     glm::mat4 computeLocalTransformMatrix();
+
+    // Makes the node auto fill the parents node's width if the parent has a layout
+    inline void makeWidthFillContainer() { setAutoWidth(AutoSize::FillContainer); }
+    // Makes the node auto fill the parents node's height if the parent has a layout
+    inline void makeHeightFillContainer() { setAutoHeight(AutoSize::FillContainer); }
+    // Makes the node auto retract in width so that it's children fit snugly if the node has a layout
+    inline void makeWidthHugContents() { setAutoWidth(AutoSize::HugContents); }
+    // Makes the node auto retract in height so that it's children fit snugly if the node has a layout
+    inline void makeHeightHugContents() { setAutoHeight(AutoSize::HugContents); }
 
 protected:
     virtual bool init();
     void markLocalTransformDirty();
     void markWorldTransformDirty();
+
+private:
+    // To be called by Director
+    void layout();
+
+    friend class Director;
+
 private:
     std::vector<std::unique_ptr<Node>> children_ = {};
     Node* parent_ = nullptr;
@@ -118,6 +168,12 @@ private:
     glm::mat4 worldTransform_{1.0f};
     bool isLocalTransformDirty_ = true;
     bool isWorldTransformDirty_ = true;
+
+    // layout & auto size
+    bool isIgnoreLayout_ = false;
+    AutoSize autoWidth_ = AutoSize::Off;
+    AutoSize autoHeight_ = AutoSize::Off;
+    std::unique_ptr<Layout> layout_ = nullptr;
 
     // state
     bool isVisible_ = true;

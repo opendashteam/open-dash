@@ -19,6 +19,21 @@ void Director::computeDeltaTime() {
     lastTime_ = now;
 }
 
+void Director::updateLayouts() {
+    if (!currentScene_) {
+        layoutDirty_ = false;
+        return;
+    }
+
+    currentScene_->traversePostorder([](Node* node) {
+        if (node->getLayout())
+            node->getLayout()->calculateMinSizeProjected();
+    });
+
+    currentScene_->layout();
+    layoutDirty_ = false;
+}
+
 void Director::tick() {
     computeDeltaTime();
 
@@ -31,6 +46,10 @@ void Director::tick() {
     gfx->setViewProjectionMatrix(getProjectionMatrix());
     
     currentScene_->update(deltaTime_);
+
+    if (layoutDirty_)
+        updateLayouts();
+
     currentScene_->render(gfx);
 
     gfx->finishDraw();

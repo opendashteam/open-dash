@@ -1,4 +1,5 @@
 #include "Node.h"
+#include "../core/Director.h"
 
 namespace opendash::engine
 {
@@ -17,6 +18,29 @@ void Node::markWorldTransformDirty() {
     for (auto& child : children_) {
         child->markWorldTransformDirty();
     }
+}
+
+void Node::layout() {
+    if (layout_) {
+        layout_->layout();
+    } else {
+        // Otherwise, just make sure hug contents in the children work
+        for (auto& child : children_) {
+            if (!child->layout_)
+                continue;
+
+            auto size    = child->getContentSize();
+            auto minSize = child->layout_->getMinSize();
+
+            child->setContentSize({
+                child->autoWidth_  == AutoSize::HugContents ? minSize.width  : size.width,
+                child->autoHeight_ == AutoSize::HugContents ? minSize.height : size.height
+            });
+        }
+    }
+
+    for (auto& child : children_)
+        child->layout();
 }
 
 const std::vector<std::unique_ptr<Node>>& Node::getChildren() const
@@ -227,6 +251,7 @@ void Node::setContentSize(const Size& contentSize)
 
     contentSize_ = contentSize;
     markLocalTransformDirty();
+    Director::get()->dirtyLayout();
 }
 
 void Node::setContentSize(float x, float y)
@@ -247,6 +272,32 @@ void Node::setContentHeight(float contentHeight)
 void Node::setVisible(bool visible)
 {
     isVisible_ = visible;
+}
+
+// TODO: Dirty layout
+void Node::setAutoWidth(AutoSize autoWidth)
+{
+    autoWidth_ = autoWidth;
+    Director::get()->dirtyLayout();
+}
+
+void Node::setAutoHeight(AutoSize autoHeight)
+{
+    autoHeight_ = autoHeight;
+    Director::get()->dirtyLayout();
+}
+
+void Node::setLayout(std::unique_ptr<Layout> layout)
+{
+    layout->setNode(this);
+    layout_ = std::move(layout);
+    Director::get()->dirtyLayout();
+}
+
+void Node::setIgnoreLayout(bool ignore)
+{
+    isIgnoreLayout_ = ignore;
+    Director::get()->dirtyLayout();
 }
 
 const Size& Node::getContentSize() const
@@ -275,6 +326,26 @@ const glm::mat4& Node::getLocalTransform() {
 bool Node::isVisible() const
 {
     return isVisible_;
+}
+
+AutoSize Node::getAutoWidth() const
+{
+    return autoWidth_;
+}
+
+AutoSize Node::getAutoHeight() const
+{
+    return autoHeight_;
+}
+
+Layout* Node::getLayout() const
+{
+    return layout_.get();
+}
+
+bool Node::isIgnoreLayout() const
+{
+    return isIgnoreLayout_;
 }
 
 glm::mat4 Node::computeLocalTransformMatrix() {
@@ -353,5 +424,16 @@ void Node::scaleBy(Point mod) {
     setScale(scale_ * mod);
 }
 
+void Node::traversePreorder(VisitChild visitFn) {
+    visitFn(this);
+    for (auto& child : children_)
+        child->traversePreorder(visitFn);
+}
+
+void Node::traversePostorder(VisitChild visitFn) {
+    for (auto& child : children_)
+        child->traversePreorder(visitFn);
+    visitFn(this);
+}
 
 }

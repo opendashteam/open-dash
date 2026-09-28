@@ -49,6 +49,21 @@ bool ExampleScene::init() {
 
     auto ncs = exampleSprite_->addChild(Sprite::createWithFrame("ncs_med_001.png"));
 
+    // LAYOUT TEST
+
+    auto bottomBar = addChild(Node::create());
+    bottomBar->makeWidthHugContents();
+    bottomBar->makeHeightHugContents();
+    bottomBar->setAnchorPoint({.5, 0});
+    bottomBar->setPosition(Director::get()->getVisibleSize().width / 2, 5);
+    bottomBar->useRowLayout()
+        .gap(5);
+
+    bottomBar->addChild(Sprite::createWithFrame("GJ_achBtn_001.png"));
+    bottomBar->addChild(Sprite::createWithFrame("GJ_optionsBtn_001.png"));
+    bottomBar->addChild(Sprite::createWithFrame("GJ_statsBtn_001.png"));
+    bottomBar->addChild(Sprite::createWithFrame("GJ_ngBtn_001.png"));
+
     return true;
 }
 

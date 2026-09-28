@@ -49,15 +49,21 @@ public:
     void setFrameSize(const Size& frameSize);
     void updateScreenScale();
     void onWindowResized(const Size& frameSize);
+    inline void dirtyLayout() {
+        layoutDirty_ = true;
+    }
     
 protected:
     bool init() override;
     void computeDeltaTime();
+    void updateLayouts();
 private:
     inline static Director* instance_ = nullptr;
 
     glm::mat4 projectionMatrix_{1.0f};
     std::unique_ptr<Scene> currentScene_ = nullptr;
+
+    bool layoutDirty_ = true;
 
     Size visibleSize_ = {0.0f, 0.0f};
     Size frameSize_  = {0.0f, 0.0f};
