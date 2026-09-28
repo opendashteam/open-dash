@@ -87,6 +87,10 @@ double Director::getTime() const {
     return platform::Window::getTime();
 }
 
+double Director::getLastTime() const {
+    return lastTime_;
+}
+
 float Director::getDeltaTime() const {
     return deltaTime_;
 }
@@ -100,8 +104,14 @@ const Size& Director::getVisibleSize() const {
     return visibleSize_;
 }
 
-const Size& Director::getFrameSize() const {
-    return frameSize_;
+const Size &Director::getFrameSize() const { return frameSize_; }
+
+Tween* Director::createTween(const TweenOptions &opt) {
+    auto tween = Tween::create(opt);
+    Tween* ret = tween.get();
+    
+    tweens_.push_back(std::move(tween));
+    return ret;
 }
 
 bool Director::init() {

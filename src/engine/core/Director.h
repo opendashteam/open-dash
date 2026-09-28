@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "../nodes/Scene.h"
+#include "../utilities/tween.h"
 
 namespace opendash::engine
 {
@@ -28,6 +29,7 @@ public:
     inline float getInvertedContentScaleFactor() const { return invertedContentScaleFactor_; }
     const Size& getDesignResolutionSize() const;
     double getTime() const;
+    double getLastTime() const;
     float getDeltaTime() const;
     float getScreenScaleFactorMax() const;
 
@@ -41,6 +43,9 @@ public:
         Get the base dimensions of the window in pixels.
     */
     const Size& getFrameSize() const;
+
+    // Tween stuff
+    Tween* createTween(const TweenOptions& opt);
 
     // internal methods, do not call outside of the engine
     void start();
@@ -80,6 +85,8 @@ private:
     float screenScaleFactor_    = 0.0f;
     float screenScaleFactorMax_ = 0.0f;
     float screenScale_          = 0.0f;
+
+    std::vector<std::unique_ptr<Tween>> tweens_{};
 };
 
 }

@@ -19,9 +19,6 @@ class Node {
 public:
     CREATE_FUNC(Node)
 
-    /*
-        Need to call std::move(child) for this to work.
-    */
     template<typename T>
     T* addChild(std::unique_ptr<T> child) {
         if (child) {

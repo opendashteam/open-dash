@@ -28,26 +28,37 @@ bool ExampleScene::init() {
     exampleSprite_ = addChild(Sprite::create("cube.png"));
     exampleSprite_->setPosition(Director::get()->getVisibleSize() / 2);
 
-    tilingSprite_ = addChild(TilingSprite::create("cube.png"));
-    tilingSprite_->setContentSize(Director::get()->getVisibleSize());
-    tilingSprite_->setPosition(Director::get()->getVisibleSize() / 2);
-    tilingSprite_->setAnchorPoint({.5f, .5f});
-    tilingSprite_->setColor(255, 0, 0);
-    tilingSprite_->setOpacity(60);
+    auto circleEffect = addChild(CircleWave::create({
+        .startRadius  = 50.0f,
+        .endRadius    = 10.0f,
+        .duration     = 3.0f,
+        .followTarget = exampleSprite_
+    }));
 
-    batchTest_ = addChild(SpriteBatchTest::create());
-    batchTest_->setPosition(Director::get()->getVisibleSize() / 2);
+    circleEffect->setColor(Color3B::RED);
 
-    exampleSprite_ = addChild(Sprite::createWithFrame("GJ_levelComplete_001.png"));
-    exampleSprite_->setPosition(Director::get()->getVisibleSize() / 2);
-    exampleSprite_->setColor(255, 0, 0);
+    // circleEffect->setScale(0.1f);
 
-    auto label = addChild(Label::createBigFont("Now with\nmultiline centered text!"));
-    label->setPosition(Point(Director::get()->getVisibleSize() / 2) - Point(0, 60));
-    label->setAnchorPoint(0.5, 0.5);
-    label->setColor(255, 0, 0);
+    // tilingSprite_ = addChild(TilingSprite::create("cube.png"));
+    // tilingSprite_->setContentSize(Director::get()->getVisibleSize());
+    // tilingSprite_->setPosition(Director::get()->getVisibleSize() / 2);
+    // tilingSprite_->setAnchorPoint({.5f, .5f});
+    // tilingSprite_->setColor(255, 0, 0);
+    // tilingSprite_->setOpacity(60);
 
-    auto ncs = exampleSprite_->addChild(Sprite::createWithFrame("ncs_med_001.png"));
+    // batchTest_ = addChild(SpriteBatchTest::create());
+    // batchTest_->setPosition(Director::get()->getVisibleSize() / 2);
+
+    // exampleSprite_ = addChild(Sprite::createWithFrame("GJ_levelComplete_001.png"));
+    // exampleSprite_->setPosition(Director::get()->getVisibleSize() / 2);
+    // exampleSprite_->setColor(255, 0, 0);
+
+    // auto label = addChild(Label::createBigFont("Now with\nmultiline centered text!"));
+    // label->setPosition(Point(Director::get()->getVisibleSize() / 2) - Point(0, 60));
+    // label->setAnchorPoint(0.5, 0.5);
+    // label->setColor(255, 0, 0);
+
+    // auto ncs = exampleSprite_->addChild(Sprite::createWithFrame("ncs_med_001.png"));
 
     // LAYOUT TEST
 

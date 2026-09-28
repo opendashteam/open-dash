@@ -10,3 +10,4 @@
 #include "../engine/core/Director.h"
 #include "../engine/core/SpriteBatch.h"
 #include "../engine/utilities/log.h"
+#include "../engine/nodes/CircleWave.h"

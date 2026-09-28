@@ -62,7 +62,6 @@ public:
     virtual void drawFilledCircle(
         const glm::mat4& positionTransform,
         const engine::Color4F& color,
-        float radius,
         engine::u32 segments,
         bool blending
     );
@@ -147,8 +146,6 @@ private:
     SDL_Window* window_ = nullptr;
     SDL_GPUDevice* device_ = nullptr;
 
-    std::unordered_map<engine::u32, SDL_GPUSampler*> samplers_;
-
     SDL_GPUBuffer* quadVertexBuffer_ = nullptr;
 
     std::vector<SDL_GPUShader*> shaders_;
@@ -161,6 +158,10 @@ private:
     SDL_GPUGraphicsPipeline* defaultSpritePipeline_ = nullptr;
     SDL_GPUGraphicsPipeline* spriteBatchPipeline_   = nullptr;
     SDL_GPUGraphicsPipeline* solidPipeline_         = nullptr;
+
+    // CACHE //
+    std::unordered_map<engine::u32, SDL_GPUSampler*> samplers_;
+    std::unordered_map<engine::u32, SDL_GPUBuffer*>  circleBuffers_; // segment count, buffer
 };
 
 }

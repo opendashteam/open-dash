@@ -68,7 +68,6 @@ public:
     virtual void drawFilledCircle(
         const glm::mat4& positionTransform,
         const engine::Color4F& color,
-        float radius,
         engine::u32 segments,
         bool blending
     ) = 0;

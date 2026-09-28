@@ -32,7 +32,9 @@ SDLGPUGraphics::~SDLGPUGraphics()
         release(spriteBatchPipeline_);
     if (quadVertexBuffer_)
         release(quadVertexBuffer_);
-    // TODO: release circle wave vertex buffers
+    
+    for (const auto& [_, circleBuffer] : circleBuffers_)
+        release(circleBuffer);
 
     SDL_ReleaseWindowFromGPUDevice(device_, window_);
     SDL_DestroyGPUDevice(device_);
@@ -152,7 +154,7 @@ static const float quadVerticies[] = {
     0.0f, 0.0f,
     0.0f, 1.0f,
     1.0f, 0.0f,
-    1.0f, 0.0f
+    1.0f, 1.0f
 };
 
 struct SpriteQuadVertex {
@@ -371,35 +373,49 @@ struct CircleUBO {
     std140_vec4 color;
 };
 
-void SDLGPUGraphics::drawFilledCircle(const glm::mat4 &positionTransform, const Color4F &color, float radius, u32 segments, bool blending)
+void SDLGPUGraphics::drawFilledCircle(const glm::mat4 &positionTransform, const Color4F &color, u32 segments, bool blending)
 {
     assert(commandBuffer_);
 
-    // TODO: cache points per segment count lazily
-    std::vector<Point> points{};
+    // Cache buffer per segment count lazily
+    SDL_GPUBuffer* buffer = nullptr;
 
-    const float radiansPerSegment = 2.0f * CC_PI / segments;
-    for (u32 i = 0; i < segments; i++) {
-        float radians = i * radiansPerSegment;
+    if (!circleBuffers_.contains(segments)) {
+        std::vector<Point> points{};
 
-        float x = radius * cosf(radians);
-        float y = radius * sinf(radians);
+        const float radiansPerSegment = 2.0f * CC_PI / segments;
+        for (u32 i = 0; i < segments; i++) {
+            float radians = i * radiansPerSegment;
 
-        points.push_back({x, y});
-        points.push_back({0.0f, 0.0f}); // Zigzag for triangle-strip to work
+            float x = cosf(radians);
+            float y = sinf(radians);
+
+            points.push_back({x, y});
+            points.push_back({0.0f, 0.0f}); // Zigzag for triangle-strip to work
+        }
+        points.push_back(points[0]);
+        buffer = createStaticGPUBuffer(points.size() * sizeof(Point), SDL_GPU_BUFFERUSAGE_VERTEX, (void*)points.data());
+
+        circleBuffers_.emplace( // Cache it once created
+            segments,
+            buffer
+        );
     }
-    points.push_back(points[0]);
+    else buffer = circleBuffers_.at(segments);
+
+    if (!buffer)
+        return;
+
+    SDL_GPUBufferBinding vertexBinding{};
+    vertexBinding.buffer = buffer;
 
     CircleUBO ubo{ positionTransform, Color4F::toVector(color) };
 
     SDL_PushGPUVertexUniformData(commandBuffer_, UNIFORM_SLOT_CIRCLE_UBO, &ubo, sizeof(ubo));
     SDL_BindGPUGraphicsPipeline(renderPass_, solidPipeline_);
-
-    SDL_GPUBufferBinding vertexBinding{};
-    vertexBinding.buffer = createStaticGPUBuffer(points.size() * sizeof(Point), SDL_GPU_BUFFERUSAGE_VERTEX, (void*)points.data());
-
+    
     SDL_BindGPUVertexBuffers(renderPass_, 0, &vertexBinding, 1);
-    SDL_DrawGPUPrimitives(renderPass_, points.size(), 1, 0, 0);
+    SDL_DrawGPUPrimitives(renderPass_, (segments * 2 + 1), 1, 0, 0);
 }
 
 struct SpritePropertiesUBO {
@@ -622,7 +638,7 @@ bool SDLGPUGraphics::setupPipelines()
     SDL_GPUShader* batchVertexShader    = loadShader("spriteBatch.vert", SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
     SDL_GPUShader* spriteVertexShader   = loadShader("sprite.vert",      SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
     SDL_GPUShader* fragmentShader       = loadShader("sprite.frag",      SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0);
-    SDL_GPUShader* solidVertexShader   = loadShader("solid.vert",      SDL_GPU_SHADERSTAGE_VERTEX,   0, 1);
+    SDL_GPUShader* solidVertexShader   = loadShader("solid.vert",      SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
     SDL_GPUShader* solidFragmentShader = loadShader("solid.frag",      SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0);
 
     if (
