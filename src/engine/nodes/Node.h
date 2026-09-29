@@ -129,6 +129,11 @@ public:
     // First the node's children, then the node
     void traversePostorder(VisitChild visitFn);
 
+    // Change this when zorder is added
+    inline void traverseDrawOrderReverse(VisitChild visitFn) {
+        traversePostorder(visitFn);
+    }
+
     // computation
     glm::mat4 computeLocalTransformMatrix();
 

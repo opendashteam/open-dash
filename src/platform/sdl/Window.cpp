@@ -15,9 +15,10 @@ static SDLGPUGraphics* graphics = nullptr;
 static bool graphicsLibsDirty = true;
 static std::set<GraphicsLibrary> graphicsLibraries;
 
-
 static std::filesystem::path assetsDirectory;
 static std::filesystem::path gameSaveDirectory;
+
+static InputScheduler* inputScheduler;
 
 bool Window::init() {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -87,6 +88,10 @@ void Window::setResizeCallback(ResizeCallback callback)
     resizeCallback = std::move(callback);
 }
 
+void Window::setInputScheduler(engine::InputScheduler* scheduler) {
+    inputScheduler = scheduler;
+}
+
 const std::filesystem::path& Window::getAssetsDirectoryPath() {
     return assetsDirectory;
 }
@@ -136,14 +141,29 @@ bool windowHandleEvent(const SDL_Event& event) {
     if (!window)
         return false;
 
-    switch (event.type)
-    {
+    switch (event.type) {
         case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
             return false;
 
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
             if (resizeCallback)
                 resizeCallback(static_cast<float>(event.window.data1), static_cast<float>(event.window.data2));
+            break;
+
+        case SDL_EVENT_MOUSE_MOTION:
+            if (inputScheduler)
+                inputScheduler->onRawMouseMove({event.motion.x, event.motion.y});
+            break;
+
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        case SDL_EVENT_MOUSE_BUTTON_UP:
+            if (inputScheduler) {
+                inputScheduler->onRawMouseInput(
+                    {event.button.x, event.button.y},
+                    (MouseButton)(event.button.button - 1),
+                    event.type == SDL_EVENT_MOUSE_BUTTON_DOWN
+                );
+            }
             break;
     }
     return true;

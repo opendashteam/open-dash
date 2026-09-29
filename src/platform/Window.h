@@ -4,6 +4,7 @@
 #include <functional>
 #include <set>
 #include "engine/core/types.h"        // wherever Size lives; adjust the path
+#include "engine/core/InputScheduler.h"
 
 #define GAME_SAVE_ORG  "teamopendash"
 #define GAME_SAVE_NAME "OpenDash"
@@ -52,6 +53,12 @@ public:
 
     // called with the new size in pixels whenever it really changes
     static void setResizeCallback(ResizeCallback callback);
+
+    /*
+        all mouse and keyboard inputs should result in calls to
+        the `onRaw-` functions in the scheduler.
+    */
+    static void setInputScheduler(engine::InputScheduler* scheduler);
 
     static const std::filesystem::path& getAssetsDirectoryPath();
 

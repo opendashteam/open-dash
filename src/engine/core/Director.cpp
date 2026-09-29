@@ -10,6 +10,8 @@ void Director::start() {
 }
 
 void Director::end() {
+    platform::Window::setInputScheduler(nullptr);
+
     AssetManager::get()->releaseAllTextures();
 }
 
@@ -104,7 +106,19 @@ const Size& Director::getFrameSize() const {
     return frameSize_;
 }
 
+Point Director::toWorldPosition(const Point& screenPos) const {
+    glm::vec4 ret = inverseProjectionMatrix_ * glm::vec4((screenPos / frameSize_ * 2.0f - 1.0f).toGLM(), 0, 1);
+    return {ret.x, ret.y};
+}
+
+Point Director::toScreenPosition(const Point& worldPos) const {
+    glm::vec4 ret = projectionMatrix_ * glm::vec4(worldPos.toGLM(), 0, 1);
+    return (Point(ret.x, ret.y) + 1.0f) / 2.0f * frameSize_;
+}
+
 bool Director::init() {
+    platform::Window::setInputScheduler(&inputScheduler_);
+
     return true;
 }
 
@@ -140,6 +154,7 @@ void Director::updateScreenScale()
     screenScaleFactorMax_ = std::max(screenScaleFactorW_, screenScaleFactorH_);
 
     projectionMatrix_ = glm::ortho(0.0f, visibleSize_.width, 0.0f, visibleSize_.height, -1.0f, 1.0f);
+    inverseProjectionMatrix_ = glm::inverse(projectionMatrix_);
 }
 
 void Director::onWindowResized(const Size &frameSize)

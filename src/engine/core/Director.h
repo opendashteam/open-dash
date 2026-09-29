@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "../nodes/Scene.h"
+#include "InputScheduler.h"
 
 namespace opendash::engine
 {
@@ -30,6 +31,7 @@ public:
     double getTime() const;
     float getDeltaTime() const;
     float getScreenScaleFactorMax() const;
+    inline InputScheduler& getInputScheduler() { return inputScheduler_; }
 
     /*
         Get the dimensions of the visible portion of
@@ -42,6 +44,9 @@ public:
     */
     const Size& getFrameSize() const;
 
+    Point toWorldPosition(const Point& screenPos) const;
+    Point toScreenPosition(const Point& worldPos) const;
+
     // internal methods, do not call outside of the engine
     void start();
     void end();
@@ -49,9 +54,8 @@ public:
     void setFrameSize(const Size& frameSize);
     void updateScreenScale();
     void onWindowResized(const Size& frameSize);
-    inline void markLayoutsDirty() {
-        areLayoutsDirty_ = true;
-    }
+    
+    inline void markLayoutsDirty() { areLayoutsDirty_ = true; }
     
 protected:
     bool init() override;
@@ -60,7 +64,10 @@ protected:
 private:
     inline static Director* instance_ = nullptr;
 
+    InputScheduler inputScheduler_;
+
     glm::mat4 projectionMatrix_{1.0f};
+    glm::mat4 inverseProjectionMatrix_{1.0f};
     std::unique_ptr<Scene> currentScene_ = nullptr;
 
     bool areLayoutsDirty_ = true;

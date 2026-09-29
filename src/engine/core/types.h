@@ -231,6 +231,14 @@ struct Point {
         return Point(x / right.x, y / right.y);
     }
 
+    Point operator+(float a) const {
+        return Point(x + a, y + a);
+    }
+
+    Point operator-(float a) const {
+        return Point(x - a, y - a);
+    }
+
     Point operator*(float a) const {
         return Point(x * a, y * a);
     }
