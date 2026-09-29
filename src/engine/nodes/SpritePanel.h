@@ -31,7 +31,7 @@ private:
     std::unique_ptr<SpriteBatch> batch_ = nullptr;
 
     Texture* texture_;
-    Rect capInsets_;
+    Rect capInsets_; // FIXME: SpritePanel is upside down
 
     Point textureOffsets[4];
 };

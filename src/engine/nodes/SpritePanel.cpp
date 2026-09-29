@@ -25,10 +25,6 @@ void SpritePanel::setCapInsets(Rect capInsets) {
     textureOffsets[2] = capInsets.origin + capInsets.size;
     textureOffsets[3] = texture_->getSize();
 
-    log::info("textureSize: {}", size);
-    log::info("capInsets: {}", capInsets);
-    log::info("textureOffsets: {}, {}, {}, {}", textureOffsets[0], textureOffsets[1], textureOffsets[2], textureOffsets[3]);
-
     isBatchDirty_ = true;
 }
 
