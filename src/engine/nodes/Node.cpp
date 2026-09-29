@@ -383,6 +383,7 @@ const glm::mat4& Node::getWorldTransform() {
         else
             worldTransform_ = getLocalTransform();
 
+        inverseWorldTransform_ = glm::inverse(worldTransform_);
         isWorldTransformDirty_ = false;
     }
     return worldTransform_;
@@ -426,6 +427,18 @@ void Node::scaleBy(float mod) {
 
 void Node::scaleBy(Point mod) {
     setScale(scale_ * mod);
+}
+
+Point Node::pointToWorldTransform(const Point& localPoint) {
+    auto ret = getWorldTransform() * glm::vec4(localPoint.toGLM(), 0, 1);
+    return {ret.x, ret.y};
+}
+
+Point Node::pointToLocalTransform(const Point& worldPoint) {
+    if (isWorldTransformDirty_)
+        getWorldTransform();
+    auto ret = inverseWorldTransform_ * glm::vec4(worldPoint.toGLM(), 0, 1);
+    return {ret.x, ret.y};
 }
 
 void Node::traversePreorder(VisitChild visitFn) {

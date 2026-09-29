@@ -7,9 +7,10 @@ namespace opendash::engine {
 class Node;
 
 enum class MouseButton {
-    LEFT   = 0,
-    MIDDLE = 1,
-    RIGHT  = 2
+    Left,
+    Middle,
+    Right,
+    Count
 };
 
 /*
@@ -17,7 +18,7 @@ enum class MouseButton {
     Input positions are in world position.
 */
 class InputDelegate {
-public:
+protected:
     InputDelegate();
     ~InputDelegate();
 
@@ -46,6 +47,8 @@ public:
         by a node above it or not.
     */
     virtual bool shouldReceiveAnyInput();
+
+    friend class InputScheduler;
 };
 
 };

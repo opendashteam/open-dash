@@ -124,6 +124,9 @@ public:
     virtual void scaleBy(float mod);
     virtual void scaleBy(Point mod);
 
+    Point pointToWorldTransform(const Point& localPoint);
+    Point pointToLocalTransform(const Point& worldPoint);
+
     // First the node, then its children
     void traversePreorder(VisitChild visitFn);
     // First the node's children, then the node
@@ -173,6 +176,7 @@ private:
     // transform cache and dirty flags
     glm::mat4 localTransform_{1.0f};
     glm::mat4 worldTransform_{1.0f};
+    glm::mat4 inverseWorldTransform_{1.0f};
     bool isLocalTransformDirty_ = true;
     bool isWorldTransformDirty_ = true;
 

@@ -107,13 +107,22 @@ const Size& Director::getFrameSize() const {
 }
 
 Point Director::toWorldPosition(const Point& screenPos) const {
-    glm::vec4 ret = inverseProjectionMatrix_ * glm::vec4((screenPos / frameSize_ * 2.0f - 1.0f).toGLM(), 0, 1);
+    glm::vec4 ndc = {
+        screenPos.x / frameSize_.width * 2.0f - 1.0f,
+        1.0 - screenPos.y / frameSize_.height * 2.0f,
+        0.0f,
+        1.0f
+    };
+    glm::vec4 ret = inverseProjectionMatrix_ * ndc;
     return {ret.x, ret.y};
 }
 
 Point Director::toScreenPosition(const Point& worldPos) const {
-    glm::vec4 ret = projectionMatrix_ * glm::vec4(worldPos.toGLM(), 0, 1);
-    return (Point(ret.x, ret.y) + 1.0f) / 2.0f * frameSize_;
+    glm::vec4 ndc = projectionMatrix_ * glm::vec4(worldPos.toGLM(), 0, 1);
+    return Point(
+        (ndc.x + 1.0f) / 2.0f * frameSize_.width,
+        (1.0f - ndc.y) / 2.0f * frameSize_.height
+    );
 }
 
 bool Director::init() {

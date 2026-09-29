@@ -1,5 +1,6 @@
 #include "InputScheduler.h"
 #include "Director.h"
+#include "../utilities/log.h"
 
 namespace opendash::engine {
 
@@ -10,6 +11,11 @@ void InputScheduler::onRawMouseMove(const Point& screenPos) {
 }
 
 void InputScheduler::onRawMouseInput(const Point& screenPos, MouseButton button, bool pressed) {
+    if ((u32)button >= (u32)MouseButton::Count)
+        return;
+
+    mouseButtonPressed_[(int)button] = pressed;
+
     Point pos = Director::get()->toWorldPosition(screenPos);
     if (pressed) {
         bool isSwallowed = false;
@@ -26,7 +32,7 @@ void InputScheduler::onRawMouseInput(const Point& screenPos, MouseButton button,
         });
     } else {
         for (const auto& delegate : delegates_)
-            delegate->onMouseDown(pos, button);
+            delegate->onMouseUp(pos, button);
     }
 }
 

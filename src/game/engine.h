@@ -7,6 +7,8 @@
 #include "../engine/nodes/Node.h"
 #include "../engine/nodes/Scene.h"
 #include "../engine/nodes/TilingSprite.h"
+#include "../engine/nodes/Label.h"
+#include "../engine/nodes/Button.h"
 #include "../engine/core/Director.h"
 #include "../engine/core/SpriteBatch.h"
 #include "../engine/utilities/log.h"
