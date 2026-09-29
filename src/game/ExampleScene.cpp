@@ -64,6 +64,12 @@ bool ExampleScene::init() {
     bottomBar->addChild(BounceButton::createWithSpriteFrame("GJ_statsBtn_001.png"));
     bottomBar->addChild(BounceButton::createWithSpriteFrame("GJ_ngBtn_001.png"));
 
+
+    auto panel = addChild(SpritePanel::create("square01_001-uhd.png"));
+    panel->setPosition(Director::get()->getVisibleSize() / 2);
+    panel->setAnchorPoint({.5, .5});
+    panel->setContentSize({300, 200});
+
     return true;
 }
 
