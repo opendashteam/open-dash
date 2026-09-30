@@ -5,7 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "../nodes/Scene.h"
 #include "InputScheduler.h"
-#include "../utilities/tween.h"
+#include "../utilities/Tween.h"
 
 namespace opendash::engine
 {
