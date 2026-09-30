@@ -28,6 +28,7 @@ public:
 
         T* raw = child.get();
         children_.push_back(std::move(child));
+        markLayoutDirty();
         return raw;
     }
 
@@ -124,10 +125,18 @@ public:
     virtual void scaleBy(float mod);
     virtual void scaleBy(Point mod);
 
+    Point pointToWorldTransform(const Point& localPoint);
+    Point pointToLocalTransform(const Point& worldPoint);
+
     // First the node, then its children
     void traversePreorder(VisitChild visitFn);
     // First the node's children, then the node
     void traversePostorder(VisitChild visitFn);
+
+    // Change this when zorder is added
+    inline void traverseDrawOrderReverse(VisitChild visitFn) {
+        traversePostorder(visitFn);
+    }
 
     // computation
     glm::mat4 computeLocalTransformMatrix();
@@ -151,6 +160,7 @@ protected:
     virtual bool init();
     void markLocalTransformDirty();
     void markWorldTransformDirty();
+    void markLayoutDirty();
 
 private:
     // To be called by Director
@@ -173,6 +183,7 @@ private:
     // transform cache and dirty flags
     glm::mat4 localTransform_{1.0f};
     glm::mat4 worldTransform_{1.0f};
+    glm::mat4 inverseWorldTransform_{1.0f};
     bool isLocalTransformDirty_ = true;
     bool isWorldTransformDirty_ = true;
 

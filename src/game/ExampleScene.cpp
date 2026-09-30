@@ -1,6 +1,6 @@
 #include "ExampleScene.h"
 #include "constants.h"
-// #include "../engine/nodes/Label.h"
+// #include "BounceButton.h"
 
 namespace opendash
 {
@@ -87,10 +87,16 @@ bool ExampleScene::init() {
     // bottomBar->useRowLayout()
     //     .gap(5);
 
-    // bottomBar->addChild(Sprite::createWithFrame("GJ_achBtn_001.png"));
-    // bottomBar->addChild(Sprite::createWithFrame("GJ_optionsBtn_001.png"));
-    // bottomBar->addChild(Sprite::createWithFrame("GJ_statsBtn_001.png"));
-    // bottomBar->addChild(Sprite::createWithFrame("GJ_ngBtn_001.png"));
+    bottomBar->addChild(BounceButton::createWithSpriteFrame("GJ_achBtn_001.png"));
+    bottomBar->addChild(BounceButton::createWithSpriteFrame("GJ_optionsBtn_001.png"));
+    bottomBar->addChild(BounceButton::createWithSpriteFrame("GJ_statsBtn_001.png"));
+    bottomBar->addChild(BounceButton::createWithSpriteFrame("GJ_ngBtn_001.png"));
+
+
+    auto panel = addChild(SpritePanel::create("square01_001-uhd.png"));
+    panel->setPosition(Director::get()->getVisibleSize() / 2);
+    panel->setAnchorPoint({.5, .5});
+    panel->setContentSize({300, 200});
 
     return true;
 }

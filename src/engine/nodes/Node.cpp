@@ -44,6 +44,10 @@ void Node::markWorldTransformDirty() {
     }
 }
 
+void Node::markLayoutDirty() {
+    Director::get()->markLayoutsDirty();
+}
+
 void Node::layout() {
     if (layout_) {
         layout_->layout();
@@ -286,7 +290,7 @@ void Node::setContentSize(const Size& contentSize)
 
     contentSize_ = contentSize;
     markLocalTransformDirty();
-    Director::get()->dirtyLayout();
+    markLayoutDirty();
 }
 
 void Node::setContentSize(float x, float y)
@@ -313,26 +317,26 @@ void Node::setVisible(bool visible)
 void Node::setAutoWidth(AutoSize autoWidth)
 {
     autoWidth_ = autoWidth;
-    Director::get()->dirtyLayout();
+    markLayoutDirty();
 }
 
 void Node::setAutoHeight(AutoSize autoHeight)
 {
     autoHeight_ = autoHeight;
-    Director::get()->dirtyLayout();
+    markLayoutDirty();
 }
 
 void Node::setLayout(std::unique_ptr<Layout> layout)
 {
     layout->setNode(this);
     layout_ = std::move(layout);
-    Director::get()->dirtyLayout();
+    markLayoutDirty();
 }
 
 void Node::setIgnoreLayout(bool ignore)
 {
     isIgnoreLayout_ = ignore;
-    Director::get()->dirtyLayout();
+    markLayoutDirty();
 }
 
 const Size& Node::getContentSize() const
@@ -418,6 +422,7 @@ const glm::mat4& Node::getWorldTransform() {
         else
             worldTransform_ = getLocalTransform();
 
+        inverseWorldTransform_ = glm::inverse(worldTransform_);
         isWorldTransformDirty_ = false;
     }
     return worldTransform_;
@@ -461,6 +466,18 @@ void Node::scaleBy(float mod) {
 
 void Node::scaleBy(Point mod) {
     setScale(scale_ * mod);
+}
+
+Point Node::pointToWorldTransform(const Point& localPoint) {
+    auto ret = getWorldTransform() * glm::vec4(localPoint.toGLM(), 0, 1);
+    return {ret.x, ret.y};
+}
+
+Point Node::pointToLocalTransform(const Point& worldPoint) {
+    if (isWorldTransformDirty_)
+        getWorldTransform();
+    auto ret = inverseWorldTransform_ * glm::vec4(worldPoint.toGLM(), 0, 1);
+    return {ret.x, ret.y};
 }
 
 void Node::traversePreorder(VisitChild visitFn) {

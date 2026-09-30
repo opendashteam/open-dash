@@ -1,7 +1,6 @@
 #include "Layout.h"
 #include "../nodes/Node.h"
 #include "Director.h"
-#include "../utilities/log.h"
 
 namespace opendash::engine
 {
@@ -17,7 +16,7 @@ float getItemAlignOffset(ItemAlign align, float innerSize, float outerSize) {
 
 void Layout::dirtyLayout() {
     if (node_)
-        Director::get()->dirtyLayout();
+        Director::get()->markLayoutsDirty();
 }
 
 void Layout::recalculateMinSize() {
@@ -119,8 +118,6 @@ void Layout::layoutProjected(const Size& innerSize) {
         firstChild = false;
     }
 
-    log::info("Incompressible space: {}", incompressibleSpace);
-
     float freeSpace = innerSize.width - incompressibleSpace;
     float mainFillingChildrenSize = 0;
     if (numMainFillingChildren > 0)
@@ -129,8 +126,6 @@ void Layout::layoutProjected(const Size& innerSize) {
     float mainPos = 0;
     if (numMainFillingChildren == 0)
         mainPos = getItemAlignOffset(mainAlign_, incompressibleSpace, innerSize.width);
-
-    int index = 0;
 
     for (auto& child : node_->getChildren()) {
         if (child->isIgnoreLayout())
@@ -154,9 +149,6 @@ void Layout::layoutProjected(const Size& innerSize) {
 
         placeChildProjected(child.get(), {mainPosRaw, crossPos}, size);
 
-        log::info("Child {} placed at {} | {}", index, Point {mainPos, crossPos}, size);
-        index++;
-
         mainPos += size.width + gap_;
         firstChild = false;
     }
@@ -165,7 +157,6 @@ void Layout::layoutProjected(const Size& innerSize) {
 void Layout::layout() {
     assert(node_);
     auto innerSize = padding_.removeFromSize(node_->getContentSize());
-    log::info("Layouting: size = {}, innerSize = {}", node_->getContentSize(), innerSize);
     layoutProjected(project(innerSize));
 }
 

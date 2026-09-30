@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "../nodes/Scene.h"
+#include "InputScheduler.h"
 #include "../utilities/tween.h"
 
 namespace opendash::engine
@@ -34,6 +35,7 @@ public:
     float getDeltaTime() const;
     float getScreenScale() const;
     float getScreenScaleFactorMax() const;
+    inline InputScheduler& getInputScheduler() { return inputScheduler_; }
     float getTimeScale() const;
 
     /*
@@ -46,6 +48,9 @@ public:
         Get the base dimensions of the window in pixels.
     */
     const Size& getFrameSize() const;
+
+    Point toWorldPosition(const Point& screenPos) const;
+    Point toScreenPosition(const Point& worldPos) const;
 
     // Tween stuff
     Tween* createTween(const TweenOptions& opt);
@@ -61,9 +66,8 @@ public:
     void setFrameSize(const Size& frameSize);
     void updateScreenScale();
     void onWindowResized(const Size& frameSize);
-    inline void dirtyLayout() {
-        layoutDirty_ = true;
-    }
+    
+    inline void markLayoutsDirty() { areLayoutsDirty_ = true; }
     
 protected:
     bool init() override;
@@ -72,10 +76,13 @@ protected:
 private:
     inline static Director* instance_ = nullptr;
 
+    InputScheduler inputScheduler_;
+
     glm::mat4 projectionMatrix_{1.0f};
+    glm::mat4 inverseProjectionMatrix_{1.0f};
     std::unique_ptr<Scene> currentScene_ = nullptr;
 
-    bool layoutDirty_ = true;
+    bool areLayoutsDirty_ = true;
 
     Size visibleSize_ = {0.0f, 0.0f};
     Size frameSize_  = {0.0f, 0.0f};

@@ -8,7 +8,7 @@ Size Size::toPoints() const {
     return *this * Director::get()->getInvertedContentScaleFactor();
 }
 
-Size Size::inPixels() const {
+Size Size::toPixels() const {
     return *this * Director::get()->getContentScaleFactor();
 }
 
@@ -16,7 +16,7 @@ Point Point::toPoints() const {
     return *this * Director::get()->getInvertedContentScaleFactor();
 }
 
-Point Point::inPixels() const {
+Point Point::toPixels() const {
     return *this * Director::get()->getContentScaleFactor();
 }
 

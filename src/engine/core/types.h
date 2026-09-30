@@ -123,6 +123,8 @@ inline Color3B Color3B::fromColor4F(const Color4F& color) {
     };
 }
 
+class Point;
+
 struct Size {
     float width;
     float height;
@@ -132,6 +134,8 @@ struct Size {
     constexpr Size(float width, float height) : width(width), height(height) {}
 
     constexpr Size(const Size& other) : width(other.width), height(other.height) {}
+
+    constexpr Size(const Point& other);
 
     bool operator==(const Size& other) const = default;
 
@@ -183,7 +187,7 @@ struct Size {
 
     Size toPoints() const;
 
-    Size inPixels() const;
+    Size toPixels() const;
 };
 
 struct Point {
@@ -214,6 +218,14 @@ struct Point {
 
     Point operator/(const Point& right) const {
         return Point(x / right.x, y / right.y);
+    }
+
+    Point operator+(float a) const {
+        return Point(x + a, y + a);
+    }
+
+    Point operator-(float a) const {
+        return Point(x - a, y - a);
     }
 
     Point operator*(float a) const {
@@ -258,8 +270,11 @@ struct Point {
 
     Point toPoints() const;
 
-    Point inPixels() const;
+    Point toPixels() const;
 };
+
+constexpr Size::Size(const Point& other)
+    : width(other.x), height(other.y) {}
 
 struct Rect {
     Point origin;
