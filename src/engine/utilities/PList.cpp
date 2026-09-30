@@ -59,6 +59,12 @@ PList* PList::parseNode(XMLNode* node) {
     if (strcmp(node->tag, "string") == 0) {
         ret->type_ = String;
         ret->stringValue_ = node->text != nullptr ? node->text : "";
+    } else if (strcmp(node->tag, "integer") == 0) {
+        ret->type_ = Integer;
+        ret->intValue_ = node->text != nullptr ? std::stoi(node->text) : 0;
+    } else if (strcmp(node->tag, "real") == 0) {
+        ret->type_ = Float;
+        ret->floatValue_ = node->text != nullptr ? std::stof(node->text) : 0;
     } else if (strcmp(node->tag, "true") == 0) {
         ret->type_ = Boolean;
         ret->booleanValue_ = true;
