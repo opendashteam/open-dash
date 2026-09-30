@@ -27,12 +27,9 @@ SDLGPUGraphics::~SDLGPUGraphics()
     for (const auto& [_, sampler] : samplers_)
         SDL_ReleaseGPUSampler(device_, sampler);
 
-    if (defaultSpritePipeline_)
-        release(defaultSpritePipeline_);
-    if (spriteBatchPipeline_)
-        release(spriteBatchPipeline_);
-    if (quadVertexBuffer_)
-        release(quadVertexBuffer_);
+    for (auto pipeline : graphicsPipelines_)
+        release(pipeline);
+    graphicsPipelines_.clear();
     
     for (const auto& [_, circleBuffer] : circleBuffers_)
         release(circleBuffer);
@@ -41,6 +38,9 @@ SDLGPUGraphics::~SDLGPUGraphics()
         release(circleBuffer.vertexBuffer);
         release(circleBuffer.indexBuffer);
     }
+
+    if (quadVertexBuffer_)
+        release(quadVertexBuffer_);
 
     SDL_ReleaseWindowFromGPUDevice(device_, window_);
     SDL_DestroyGPUDevice(device_);
@@ -396,12 +396,9 @@ void SDLGPUGraphics::drawFilledCircle(const glm::mat4 &positionTransform, const 
         auto points = computeCirclePoints(segments);
         buffer = createStaticGPUBuffer(points.size() * sizeof(Point), SDL_GPU_BUFFERUSAGE_VERTEX, (void*)points.data());
 
-        circleBuffers_.emplace( // Cache it once created
-            segments,
-            buffer
-        );
+        circleBuffers_[segments] = buffer; // Cache it once created
     }
-    else buffer = circleBuffers_.at(segments);
+    else buffer = circleBuffers_[segments];
 
     if (!buffer)
         return;
@@ -443,16 +440,11 @@ void SDLGPUGraphics::drawOutlineCircle(const glm::mat4 &positionTransform, const
     OutlineMeshBuffers buffers{};
 
     if (!outlineCircleBuffers_.contains(segments)) {
-        auto points = computeOutlineCirclePoints(segments);
-
         buffers = createOutlineCircleBuffers(segments);
 
-        outlineCircleBuffers_.emplace( // Cache it once created
-            segments,
-            buffers
-        );
+        outlineCircleBuffers_[segments] = buffers; // Cache it once created
     }
-    else buffers = outlineCircleBuffers_.at(segments);
+    else buffers = outlineCircleBuffers_[segments];
 
     float lineWidthPhysicalPixels = lineWidthPx / Director::get()->getScreenScale();
 
@@ -688,6 +680,8 @@ SDL_GPUGraphicsPipeline* SDLGPUGraphics::createGraphicsPipeline(
     SDL_GPUGraphicsPipeline* pipeline = SDL_CreateGPUGraphicsPipeline(device_, &pipelineInfo);
     if (!pipeline)
         log::err("failed to create graphics pipeline: {}", SDL_GetError());
+
+    graphicsPipelines_.push_back(pipeline);
     return pipeline;
 }
 

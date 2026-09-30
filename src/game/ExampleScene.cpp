@@ -13,7 +13,6 @@ void ExampleScene::update(float dt) {
     if (batchTest_) {
         batchTest_->rotateBy((180.0f / constants::player::kRotationDuration) * dt * 0.128);
     }
-    log::info("child count: {}", getChildCount());
 }
 
 bool ExampleScene::init() {

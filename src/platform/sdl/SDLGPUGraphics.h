@@ -166,6 +166,7 @@ private:
     SDL_GPUBuffer* quadVertexBuffer_ = nullptr;
 
     std::vector<SDL_GPUShader*> shaders_;
+    std::vector<SDL_GPUGraphicsPipeline*> graphicsPipelines_;
 
     // DRAW PASS VARIABLES //
     SDL_GPUCommandBuffer* commandBuffer_ = nullptr;
