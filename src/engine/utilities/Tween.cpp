@@ -15,7 +15,7 @@ inline float bounceTime(float time) {
         return 7.5625f * time * time + 0.75f;
     }
 
-    else if(time < 2.5 / 2.75) {
+    else if (time < 2.5 / 2.75) {
         time -= 2.25f / 2.75f;
         return 7.5625f * time * time + 0.9375f;
     }

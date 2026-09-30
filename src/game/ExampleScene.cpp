@@ -33,18 +33,21 @@ bool ExampleScene::init() {
     // fireInTheHole->enableBlending();
 
     // TIMEWARP
-    Director::get()->setTimeScale(0.1f);
+    Director::get()->setTimeScale(1.0f);
 
-    addChild(CircleWave::create(
-        constants::presets::kCircleEffectPortalWave
-    ))->setFollowTarget(exampleSprite_);
+    Director::get()->scheduleOnce([this]() {
+        addChild(CircleWave::create(
+            constants::presets::kCircleEffectPortalWave
+        ))->setFollowTarget(exampleSprite_);
 
-    auto circleEffect = addChild(CircleWave::create(
-        constants::presets::kCircleEffectPortalWaveExtra
-    ));
+        auto circleEffect = addChild(CircleWave::create(
+            constants::presets::kCircleEffectPortalWaveExtra
+        ));
 
-    circleEffect->setPosition(exampleSprite_->getPosition());
-    circleEffect->setColor(Color3B::Green);
+        circleEffect->setPosition(exampleSprite_->getPosition());
+        circleEffect->setColor(Color3B::Green);        
+    }, 1.0f);
+
 
     // Director::get()->createBlinkTween(
     //     exampleSprite_,

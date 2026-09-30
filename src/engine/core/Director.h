@@ -10,6 +10,11 @@
 namespace opendash::engine
 {
 
+struct ScheduledCallback {
+    Callback<> function;
+    float delayRemaining;
+};
+
 /*
     CCDirector equivalent. Handles the scene stack and engine state.
 */
@@ -37,6 +42,7 @@ public:
     float getScreenScaleFactorMax() const;
     inline InputScheduler& getInputScheduler() { return inputScheduler_; }
     float getTimeScale() const;
+    float getScaledDeltaTime() const;
 
     /*
         Get the dimensions of the visible portion of
@@ -55,9 +61,15 @@ public:
     // Tween stuff
     Tween* createTween(const TweenOptions& opt);
     void removeTween(Tween* tween);
+    void handleTweens();
 
     // Types of tweens
     void createBlinkTween(Node* target, float duration, u32 blinks, Callback<> onComplete);
+
+    // Scheduling-related
+    void scheduleNextFrame(Callback<> callback);
+    void scheduleOnce(Callback<> callback, float delaySeconds);
+    void handleScheduledCallbacks();
 
     // internal methods, do not call outside of the engine
     void start();
@@ -94,6 +106,7 @@ private:
     double lastTime_ = 0.0;
     float deltaTime_ = 0.0f;
     float timeScale_ = 1.0f;
+    float scaledDeltaTime_ = 0.0f;
 
     float screenScaleFactorW_   = 0.0f;
     float screenScaleFactorH_   = 0.0f;
@@ -103,6 +116,8 @@ private:
 
     std::vector<std::unique_ptr<Tween>> tweens_{};
     std::vector<Tween*> pendingTweenRemovals_;
+
+    std::vector<ScheduledCallback> scheduledCallbacks_{};
 };
 
 }

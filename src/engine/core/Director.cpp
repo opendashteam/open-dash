@@ -19,6 +19,7 @@ void Director::computeDeltaTime() {
     double now = getTime();
     deltaTime_ = now - lastTime_;
     lastTime_ = now;
+    scaledDeltaTime_ = deltaTime_ * timeScale_;
 }
 
 void Director::updateLayouts() {
@@ -36,13 +37,9 @@ void Director::updateLayouts() {
     areLayoutsDirty_ = false;
 }
 
-void Director::tick() {
-    computeDeltaTime();
-
-    float scaledDeltaTime = deltaTime_ * timeScale_;
-
+void Director::handleTweens() {
     for (auto& tween : tweens_) {
-        if (tween) tween->update(scaledDeltaTime);
+        if (tween) tween->update(scaledDeltaTime_);
     }
 
     for (Tween* target : pendingTweenRemovals_) {
@@ -51,6 +48,12 @@ void Director::tick() {
         });
     }
     pendingTweenRemovals_.clear();
+}
+
+void Director::tick() {
+    computeDeltaTime();
+    handleTweens();
+    handleScheduledCallbacks();
 
     Graphics* gfx = platform::Window::getGraphics();
 
@@ -60,7 +63,7 @@ void Director::tick() {
 
     gfx->setViewProjectionMatrix(getProjectionMatrix());
     
-    currentScene_->update(scaledDeltaTime);
+    currentScene_->update(scaledDeltaTime_);
 
     if (areLayoutsDirty_)
         updateLayouts();
@@ -125,6 +128,10 @@ float Director::getTimeScale() const {
     return timeScale_;
 }
 
+float Director::getScaledDeltaTime() const {
+    return scaledDeltaTime_;
+}
+
 const Size& Director::getVisibleSize() const {
     return visibleSize_;
 }
@@ -167,6 +174,33 @@ void Director::createBlinkTween(Node* target, float duration, u32 blinks, Callba
 
     tween->start();
     tweens_.push_back(std::move(tween));
+}
+
+void Director::scheduleNextFrame(Callback<> callback) {
+    scheduleOnce(callback, 0.0f);
+    // Using a delay of zero means it will be automatically picked up
+    // the next iteration of Director::tick, since this function can't be called
+    // before scheduled callbacks are handled.
+}
+
+// WARNING: You will run into bugs if you schedule from inside another callback
+// Fix later if needed, keep this for now
+void Director::scheduleOnce(Callback<> callback, float delaySeconds) {
+    if (!callback) return;
+
+    scheduledCallbacks_.push_back({callback, delaySeconds});
+}
+
+void Director::handleScheduledCallbacks() {
+    for (auto& callback : scheduledCallbacks_) {
+        callback.delayRemaining -= scaledDeltaTime_;
+        if (callback.delayRemaining <= 0.0f)
+            callback.function();
+    }
+
+    std::erase_if(scheduledCallbacks_, [](const ScheduledCallback& callback) {
+        return callback.delayRemaining <= 0.0f;
+    });
 }
 
 Point Director::toWorldPosition(const Point& screenPos) const {
