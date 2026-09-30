@@ -4,6 +4,30 @@
 namespace opendash::engine
 {
 
+void Node::removeFromParentAndCleanup() {
+    if (parent_) {
+        parent_->removeChild(this);
+
+        // Cleanup...
+    }
+}
+
+void Node::incrementTweenCount(u32 increment) {
+    activeTweenCount_+= increment;
+}
+
+void Node::decrementTweenCount(u32 decrement) {
+    activeTweenCount_-= decrement;
+
+    if (activeTweenCount_ == 0) {
+        onAllTweensFinished();
+    }
+}
+
+void Node::onAllTweensFinished() {
+    // Override me
+}
+
 bool Node::init() {
     return true;
 }
@@ -46,6 +70,17 @@ void Node::layout() {
 const std::vector<std::unique_ptr<Node>>& Node::getChildren() const
 {
     return children_;
+}
+
+void Node::removeChild(Node* child) {
+    if (!child) return;
+
+    child->parent_ = nullptr;
+
+    // Find a faster solution if performance is an issue
+    std::erase_if(children_, [child](const std::unique_ptr<Node>& c) {
+        return c.get() == child;
+    });
 }
 
 Node::~Node() {}
@@ -346,6 +381,10 @@ Layout* Node::getLayout() const
 bool Node::isIgnoreLayout() const
 {
     return isIgnoreLayout_;
+}
+
+int Node::getChildCount() const {
+    return children_.size();
 }
 
 glm::mat4 Node::computeLocalTransformMatrix() {

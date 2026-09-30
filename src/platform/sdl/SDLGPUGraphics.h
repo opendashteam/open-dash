@@ -2,6 +2,7 @@
 
 #include "engine/core/Graphics.h"
 #include "../Window.h"
+#include "engine/core/types.h"
 
 /*
     Because this header file includes SDL, it is important
@@ -12,6 +13,12 @@
 
 namespace opendash::platform
 {
+
+struct OutlineMeshBuffers {
+    SDL_GPUBuffer* vertexBuffer;
+    SDL_GPUBuffer* indexBuffer;
+    engine::u32 indexCount;
+};
 
 class SDLGPUGraphics : public engine::Graphics
 {
@@ -48,7 +55,8 @@ public:
         const glm::mat4& positionTransform,
         const glm::mat3& textureTransform,
         const engine::Color4F& color,
-        const engine::TextureWrapParameters& wrapParams
+        const engine::TextureWrapParameters& wrapParams,
+        bool blending
     );
 
     virtual void drawSpriteBatch(
@@ -63,6 +71,14 @@ public:
         const glm::mat4& positionTransform,
         const engine::Color4F& color,
         engine::u32 segments,
+        bool blending
+    );
+
+    virtual void drawOutlineCircle(
+        const glm::mat4& positionTransform,
+        const engine::Color4F& color,
+        engine::u32 segments,
+        engine::u32 lineWidthPx,
         bool blending
     );
 
@@ -83,7 +99,8 @@ private:
         SDL_GPUPrimitiveType primitive,
         const std::vector<VertexAttribute>& attributes,
         SDL_GPUShader* vertexShader,
-        SDL_GPUShader* fragmentShader
+        SDL_GPUShader* fragmentShader,
+        bool additiveBlending
     );
 
     bool setupPipelines();
@@ -134,7 +151,7 @@ private:
     );
 
     SDL_GPUBuffer* createStaticGPUBuffer(engine::u32 size, SDL_GPUBufferUsageFlags usage, void* data);
-
+    OutlineMeshBuffers createOutlineCircleBuffers(engine::u32 segments);
     SDL_GPUSampler* fetchSampler(const engine::TextureWrapParameters& params);
 
 private:
@@ -156,12 +173,17 @@ private:
 
     // PIPELINES //
     SDL_GPUGraphicsPipeline* defaultSpritePipeline_ = nullptr;
+    SDL_GPUGraphicsPipeline* defaultSpriteBlendingPipeline_ = nullptr;
     SDL_GPUGraphicsPipeline* spriteBatchPipeline_   = nullptr;
     SDL_GPUGraphicsPipeline* solidPipeline_         = nullptr;
+    SDL_GPUGraphicsPipeline* solidBlendingPipeline_ = nullptr;
+    SDL_GPUGraphicsPipeline* solidOutlinePipeline_ = nullptr;
+    SDL_GPUGraphicsPipeline* solidOutlineBlendingPipeline_ = nullptr;
 
     // CACHE //
     std::unordered_map<engine::u32, SDL_GPUSampler*> samplers_;
     std::unordered_map<engine::u32, SDL_GPUBuffer*>  circleBuffers_; // segment count, buffer
+    std::unordered_map<engine::u32, OutlineMeshBuffers>  outlineCircleBuffers_; // segment count, buffers
 };
 
 }

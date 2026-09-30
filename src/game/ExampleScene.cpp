@@ -1,6 +1,6 @@
 #include "ExampleScene.h"
 #include "constants.h"
-#include "../engine/nodes/Label.h"
+// #include "../engine/nodes/Label.h"
 
 namespace opendash
 {
@@ -13,6 +13,7 @@ void ExampleScene::update(float dt) {
     if (batchTest_) {
         batchTest_->rotateBy((180.0f / constants::player::kRotationDuration) * dt * 0.128);
     }
+    log::info("child count: {}", getChildCount());
 }
 
 bool ExampleScene::init() {
@@ -28,16 +29,32 @@ bool ExampleScene::init() {
     exampleSprite_ = addChild(Sprite::create("cube.png"));
     exampleSprite_->setPosition(Director::get()->getVisibleSize() / 2);
 
-    auto circleEffect = addChild(CircleWave::create({
-        .startRadius  = 50.0f,
-        .endRadius    = 10.0f,
-        .duration     = 3.0f,
-        .followTarget = exampleSprite_
-    }));
+    // auto fireInTheHole = addChild(Sprite::createWithFrame("diffIcon_04_btn_001.png"));
+    // fireInTheHole->setPosition(Director::get()->getVisibleSize() / 2);
+    // fireInTheHole->enableBlending();
 
-    circleEffect->setColor(Color3B::RED);
+    // TIMEWARP
+    Director::get()->setTimeScale(0.1f);
 
-    // circleEffect->setScale(0.1f);
+    addChild(CircleWave::create(
+        constants::presets::kCircleEffectPortalWave
+    ))->setFollowTarget(exampleSprite_);
+
+    auto circleEffect = addChild(CircleWave::create(
+        constants::presets::kCircleEffectPortalWaveExtra
+    ));
+
+    circleEffect->setPosition(exampleSprite_->getPosition());
+    circleEffect->setColor(Color3B::Green);
+
+    // Director::get()->createBlinkTween(
+    //     exampleSprite_,
+    //     constants::player::kRespawnBlinkDuration,
+    //     constants::player::kRespawnBlinks,
+    //     [this]() {
+    //         exampleSprite_->setVisible(true);
+    //     }
+    // );
 
     // tilingSprite_ = addChild(TilingSprite::create("cube.png"));
     // tilingSprite_->setContentSize(Director::get()->getVisibleSize());
@@ -62,18 +79,18 @@ bool ExampleScene::init() {
 
     // LAYOUT TEST
 
-    auto bottomBar = addChild(Node::create());
-    bottomBar->makeWidthHugContents();
-    bottomBar->makeHeightHugContents();
-    bottomBar->setAnchorPoint({.5, 0});
-    bottomBar->setPosition(Director::get()->getVisibleSize().width / 2, 5);
-    bottomBar->useRowLayout()
-        .gap(5);
+    // auto bottomBar = addChild(Node::create());
+    // bottomBar->makeWidthHugContents();
+    // bottomBar->makeHeightHugContents();
+    // bottomBar->setAnchorPoint({.5, 0});
+    // bottomBar->setPosition(Director::get()->getVisibleSize().width / 2, 5);
+    // bottomBar->useRowLayout()
+    //     .gap(5);
 
-    bottomBar->addChild(Sprite::createWithFrame("GJ_achBtn_001.png"));
-    bottomBar->addChild(Sprite::createWithFrame("GJ_optionsBtn_001.png"));
-    bottomBar->addChild(Sprite::createWithFrame("GJ_statsBtn_001.png"));
-    bottomBar->addChild(Sprite::createWithFrame("GJ_ngBtn_001.png"));
+    // bottomBar->addChild(Sprite::createWithFrame("GJ_achBtn_001.png"));
+    // bottomBar->addChild(Sprite::createWithFrame("GJ_optionsBtn_001.png"));
+    // bottomBar->addChild(Sprite::createWithFrame("GJ_statsBtn_001.png"));
+    // bottomBar->addChild(Sprite::createWithFrame("GJ_ngBtn_001.png"));
 
     return true;
 }

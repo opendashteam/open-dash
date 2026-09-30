@@ -26,7 +26,7 @@ void Director::updateLayouts() {
     }
 
     currentScene_->traversePostorder([](Node* node) {
-        if (node->getLayout())
+        if (node && node->getLayout())
             node->getLayout()->calculateMinSizeProjected();
     });
 
@@ -37,6 +37,19 @@ void Director::updateLayouts() {
 void Director::tick() {
     computeDeltaTime();
 
+    float scaledDeltaTime = deltaTime_ * timeScale_;
+
+    for (auto& tween : tweens_) {
+        if (tween) tween->update(scaledDeltaTime);
+    }
+
+    for (Tween* target : pendingTweenRemovals_) {
+        std::erase_if(tweens_, [target](const std::unique_ptr<Tween>& t) {
+            return t.get() == target;
+        });
+    }
+    pendingTweenRemovals_.clear();
+
     Graphics* gfx = platform::Window::getGraphics();
 
     if (!gfx->beginDraw()) return;
@@ -45,7 +58,7 @@ void Director::tick() {
 
     gfx->setViewProjectionMatrix(getProjectionMatrix());
     
-    currentScene_->update(deltaTime_);
+    currentScene_->update(scaledDeltaTime);
 
     if (layoutDirty_)
         updateLayouts();
@@ -69,6 +82,9 @@ void Director::setContentScaleFactor(float contentScaleFactor) {
 void Director::setDesignResolutionSize(const Size &designResolutionSize) {
     designResolutionSize_ = designResolutionSize;
     updateScreenScale();
+}
+void Director::setTimeScale(float timeScale) {
+    timeScale_ = timeScale;
 }
 
 glm::mat4 Director::getProjectionMatrix() const {
@@ -95,9 +111,16 @@ float Director::getDeltaTime() const {
     return deltaTime_;
 }
 
-float Director::getScreenScaleFactorMax() const
-{
+float Director::getScreenScale() const {
+    return screenScale_;
+}
+
+float Director::getScreenScaleFactorMax() const {
     return screenScaleFactorMax_;
+}
+
+float Director::getTimeScale() const {
+    return timeScale_;
 }
 
 const Size& Director::getVisibleSize() const {
@@ -110,8 +133,38 @@ Tween* Director::createTween(const TweenOptions &opt) {
     auto tween = Tween::create(opt);
     Tween* ret = tween.get();
     
-    tweens_.push_back(std::move(tween));
+    tweens_.push_back(std::move(tween)); 
     return ret;
+}
+
+void Director::removeTween(Tween *tween) {
+    // Queue instead of deleting immediately
+    pendingTweenRemovals_.push_back(tween);
+}
+
+void Director::createBlinkTween(Node* target, float duration, u32 blinks, Callback<> onComplete) {
+    if (!target) return;
+
+    auto tween = Tween::create({
+        .from = 0.0f,
+        .to = 1.0f,
+        .duration = duration,
+        .easingType = EasingType::Linear,
+        .onUpdate = [target, blinks](float time) {
+            if (!target) return;
+
+            float slice = 1.0f / blinks;
+            float m = fmodf(time, slice);
+            target->setVisible(m > slice / 2);
+        },
+        .onComplete = [onComplete]() {
+            if (onComplete) onComplete();
+        },
+        .deleteSelf = true
+    });
+
+    tween->start();
+    tweens_.push_back(std::move(tween));
 }
 
 bool Director::init() {

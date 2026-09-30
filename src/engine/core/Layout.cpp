@@ -51,6 +51,7 @@ Size Layout::calculateMinSizeProjected() {
 }
 
 Size Layout::getChildMinSizeProjected(Node* child) {
+    if (!child) return {0.0f, 0.0f};
     Layout* layout = child->getLayout();
 
     Size minSizeUnprojected;
@@ -74,6 +75,7 @@ Size Layout::getChildMinSizeProjected(Node* child) {
 }
 
 bool Layout::doesChildFillMainAxis(Node* child) {
+    if (!child) return false;
     if (direction_ == LayoutDirection::Row)
         return child->getAutoWidth() == AutoSize::FillContainer;
     else
@@ -81,6 +83,7 @@ bool Layout::doesChildFillMainAxis(Node* child) {
 }
 
 bool Layout::doesChildFillCrossAxis(Node* child) {
+    if (!child) return false;
     if (direction_ == LayoutDirection::Row)
         return child->getAutoHeight() == AutoSize::FillContainer;
     else
@@ -88,6 +91,7 @@ bool Layout::doesChildFillCrossAxis(Node* child) {
 }
 
 void Layout::placeChildProjected(Node* child, const Point& newPosition, const Size& newSize) {
+    if (!child) return;
     Size unprojectedSize = project(newSize);
 
     child->setAnchorPoint(.5, .5);

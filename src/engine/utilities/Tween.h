@@ -50,6 +50,7 @@ struct TweenOptions {
     Callback<> onComplete;
     float rate = 2.0f; // for Ease functions
     float period = 0.3f; // for Elastic functions
+    bool deleteSelf = false; // (Runs AFTER onComplete()) Delete the tween from Director once completed
 };
 
 class Tween {
@@ -101,7 +102,7 @@ public:
     Tween& stopRepeating();
 
     /*
-        Resets the tween's state and starts it up again instantly. This is an alternative to doing `->stop()->start();`.
+        Resets the tween's state and starts it up again instantly. This is an alternative to doing `stop()` followed by `start()`.
     */
     Tween& restart();
 

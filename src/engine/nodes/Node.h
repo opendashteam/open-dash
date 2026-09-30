@@ -21,6 +21,7 @@ public:
 
     template<typename T>
     T* addChild(std::unique_ptr<T> child) {
+        // TODO: might need to check if child already exists, maybe not
         if (child) {
             child->parent_ = this;
         }
@@ -29,6 +30,8 @@ public:
         children_.push_back(std::move(child));
         return raw;
     }
+
+    void removeChild(Node* child);
 
     virtual ~Node();
     
@@ -107,6 +110,7 @@ public:
     virtual AutoSize getAutoHeight() const;
     virtual Layout* getLayout() const;
     virtual bool isIgnoreLayout() const;
+    virtual int getChildCount() const;
 
     // relative transformations
     virtual void rotateBy(float deltaDegrees);
@@ -136,6 +140,12 @@ public:
     inline void makeWidthHugContents() { setAutoWidth(AutoSize::HugContents); }
     // Makes the node auto retract in height so that it's children fit snugly if the node has a layout
     inline void makeHeightHugContents() { setAutoHeight(AutoSize::HugContents); }
+
+    void removeFromParentAndCleanup();
+    void incrementTweenCount(u32 increment = 1);
+    void decrementTweenCount(u32 decrement = 1);
+
+    virtual void onAllTweensFinished();
 
 protected:
     virtual bool init();
@@ -174,6 +184,8 @@ private:
 
     // state
     bool isVisible_ = true;
+
+    u32 activeTweenCount_ = 0;
 };
 
 }

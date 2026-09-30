@@ -44,7 +44,8 @@ public:
         const glm::mat4& positionTransform,
         const glm::mat3& textureTransform,
         const Color4F& color,
-        const engine::TextureWrapParameters& wrapParams
+        const engine::TextureWrapParameters& wrapParams,
+        bool blending
     ) = 0;
 
     inline void drawSprite(
@@ -52,9 +53,10 @@ public:
         const glm::mat4& positionTransform,
         const glm::mat3& textureTransform,
         const Color4F& color,
-        const engine::TextureWrapParameters& wrapParams
+        const engine::TextureWrapParameters& wrapParams,
+        bool blending
     ) {
-        drawSprite(texture->getInternalObject(), positionTransform, textureTransform, color, wrapParams);
+        drawSprite(texture->getInternalObject(), positionTransform, textureTransform, color, wrapParams, blending);
     }
 
     virtual void drawSpriteBatch(
@@ -69,6 +71,14 @@ public:
         const glm::mat4& positionTransform,
         const engine::Color4F& color,
         engine::u32 segments,
+        bool blending
+    ) = 0;
+
+    virtual void drawOutlineCircle(
+        const glm::mat4& positionTransform,
+        const engine::Color4F& color,
+        engine::u32 segments,
+        engine::u32 lineWidthPx,
         bool blending
     ) = 0;
 };

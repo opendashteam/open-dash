@@ -24,7 +24,19 @@ using Callback = std::function<void(args...)>;
 struct Vertex {
     float x, y;
     float u, v;
-};    
+};   
+
+struct OutlineVertex {
+    glm::vec2 segStart;
+    glm::vec2 segEnd;
+    float side; // -1 or +1
+    float endpoint; // 0 or 1
+};
+
+struct OutlineMesh {
+    std::vector<OutlineVertex> vertices; // Points
+    std::vector<u32> indices; // Which points connect to which to form triangles
+};
 
 struct PathHash {
     std::size_t operator()(const std::filesystem::path& p) const {
@@ -41,50 +53,40 @@ struct Color3B {
 
     bool operator==(const Color3B& other) const = default;
 
-    static const Color3B WHITE;
-    static const Color3B BLACK;
-    static const Color3B RED;
-    static const Color3B GREEN;
-    static const Color3B BLUE;
-    static const Color3B CYAN;
-    static const Color3B MAGENTA;
-    static const Color3B YELLOW;
+    static const Color3B White;
+    static const Color3B Black;
+    static const Color3B Red;
+    static const Color3B Green;
+    static const Color3B Blue;
+    static const Color3B Cyan;
+    static const Color3B Magenta;
+    static const Color3B Yellow;
+    static const Color3B GoldenYellow;
+    static const Color3B VividRed;
+    static const Color3B VividBlue;
+    static const Color3B BrightOrange;
+    static const Color3B NeonGreen;
 };
 
-inline constexpr Color3B Color3B::WHITE = {255, 255, 255};
-inline constexpr Color3B Color3B::BLACK = {0, 0, 0};
-inline constexpr Color3B Color3B::RED   = {255, 0, 0};
-inline constexpr Color3B Color3B::GREEN = {0, 255, 0};
-inline constexpr Color3B Color3B::BLUE  = {0, 0, 255};
-inline constexpr Color3B Color3B::CYAN   = {0, 255, 255};
-inline constexpr Color3B Color3B::MAGENTA = {255, 0, 255};
-inline constexpr Color3B Color3B::YELLOW  = {255, 255, 0};
+inline constexpr Color3B Color3B::White = {255, 255, 255};
+inline constexpr Color3B Color3B::Black = {0, 0, 0};
+inline constexpr Color3B Color3B::Red   = {255, 0, 0};
+inline constexpr Color3B Color3B::Green = {0, 255, 0};
+inline constexpr Color3B Color3B::Blue  = {0, 0, 255};
+inline constexpr Color3B Color3B::Cyan   = {0, 255, 255};
+inline constexpr Color3B Color3B::Magenta = {255, 0, 255};
+inline constexpr Color3B Color3B::Yellow  = {255, 255, 0};
+inline constexpr Color3B Color3B::GoldenYellow  = {255, 200, 0};
+inline constexpr Color3B Color3B::VividRed  = {255, 50, 50};
+inline constexpr Color3B Color3B::VividBlue  = {0, 150, 255};
+inline constexpr Color3B Color3B::BrightOrange = {255, 150, 0};
+inline constexpr Color3B Color3B::NeonGreen = {0, 255, 100};
 
 struct Color4B {
     u8 r, g, b, a;
 
     bool operator==(const Color4B& other) const = default;
-
-    static const Color4B WHITE;
-    static const Color4B BLACK;
-    static const Color4B RED;
-    static const Color4B GREEN;
-    static const Color4B BLUE;
-    static const Color4B CYAN;
-    static const Color4B MAGENTA;
-    static const Color4B YELLOW;
-    static const Color4B TRANSPARENT;
 };
-
-inline constexpr Color4B Color4B::WHITE = {255, 255, 255, 255};
-inline constexpr Color4B Color4B::BLACK = {0, 0, 0, 255};
-inline constexpr Color4B Color4B::RED   = {255, 0, 0, 255};
-inline constexpr Color4B Color4B::GREEN = {0, 255, 0, 255};
-inline constexpr Color4B Color4B::BLUE  = {0, 0, 255, 255};
-inline constexpr Color4B Color4B::CYAN   = {0, 255, 255, 255};
-inline constexpr Color4B Color4B::MAGENTA = {255, 0, 255, 255};
-inline constexpr Color4B Color4B::YELLOW  = {255, 255, 0, 255};
-inline constexpr Color4B Color4B::TRANSPARENT = {0, 0, 0, 0};
 struct Color4F {
     float r, g, b, a;
 
@@ -111,27 +113,7 @@ struct Color4F {
     static glm::vec4 toVector(const Color4F& color) {
         return {color.r, color.g, color.b, color.a};
     };
-
-    static const Color4F WHITE;
-    static const Color4F BLACK;
-    static const Color4F RED;
-    static const Color4F GREEN;
-    static const Color4F BLUE;
-    static const Color4F CYAN;
-    static const Color4F MAGENTA;
-    static const Color4F YELLOW;
-    static const Color4F TRANSPARENT;
 };
-
-inline constexpr Color4F Color4F::WHITE = {1.0f, 1.0f, 1.0f, 1.0f};
-inline constexpr Color4F Color4F::BLACK = {0.0f, 0.0f, 0.0f, 1.0f};
-inline constexpr Color4F Color4F::RED   = {1.0f, 0.0f, 0.0f, 1.0f};
-inline constexpr Color4F Color4F::GREEN = {0.0f, 1.0f, 0.0f, 1.0f};
-inline constexpr Color4F Color4F::BLUE  = {0.0f, 0.0f, 1.0f, 1.0f};
-inline constexpr Color4F Color4F::CYAN   = {0.0f, 1.0f, 1.0f, 1.0f};
-inline constexpr Color4F Color4F::MAGENTA = {1.0f, 0.0f, 1.0f, 1.0f};
-inline constexpr Color4F Color4F::YELLOW  = {1.0f, 1.0f, 0.0f, 1.0f};
-inline constexpr Color4F Color4F::TRANSPARENT = {0.0f, 0.0f, 0.0f, 0.0f};
 
 inline Color3B Color3B::fromColor4F(const Color4F& color) {
     return {

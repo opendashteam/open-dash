@@ -21,6 +21,7 @@ public:
     void setScene(std::unique_ptr<Scene>& scene);
     void setContentScaleFactor(float contentScaleFactor);
     void setDesignResolutionSize(const Size& designResolutionSize);
+    void setTimeScale(float timeScale);
 
     // getters
     glm::mat4 getProjectionMatrix() const;
@@ -31,7 +32,9 @@ public:
     double getTime() const;
     double getLastTime() const;
     float getDeltaTime() const;
+    float getScreenScale() const;
     float getScreenScaleFactorMax() const;
+    float getTimeScale() const;
 
     /*
         Get the dimensions of the visible portion of
@@ -46,6 +49,10 @@ public:
 
     // Tween stuff
     Tween* createTween(const TweenOptions& opt);
+    void removeTween(Tween* tween);
+
+    // Types of tweens
+    void createBlinkTween(Node* target, float duration, u32 blinks, Callback<> onComplete);
 
     // internal methods, do not call outside of the engine
     void start();
@@ -79,6 +86,7 @@ private:
 
     double lastTime_ = 0.0;
     float deltaTime_ = 0.0f;
+    float timeScale_ = 1.0f;
 
     float screenScaleFactorW_   = 0.0f;
     float screenScaleFactorH_   = 0.0f;
@@ -87,6 +95,7 @@ private:
     float screenScale_          = 0.0f;
 
     std::vector<std::unique_ptr<Tween>> tweens_{};
+    std::vector<Tween*> pendingTweenRemovals_;
 };
 
 }

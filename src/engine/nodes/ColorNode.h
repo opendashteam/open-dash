@@ -12,6 +12,7 @@ public:
     virtual void setColor(u8 r, u8 g, u8 b);
     virtual void setColor(const Color4F& color);
     virtual void setOpacity(u8 opacity);
+    virtual void setOpacityF(float unitOpacity);
 
     //getters
     const Color3B& getColor() const;

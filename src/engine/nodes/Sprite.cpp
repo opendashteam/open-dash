@@ -37,6 +37,18 @@ std::unique_ptr<Sprite> Sprite::createWithFrame(const std::string& spriteFrameNa
     return createWithFrame(spriteFrame);
 }
 
+void Sprite::disableBlending() {
+    blendingEnabled_ = false;
+}
+
+bool Sprite::isBlendingEnabled() {
+    return blendingEnabled_;
+}
+
+void Sprite::enableBlending() {
+    blendingEnabled_ = true;
+}
+
 bool Sprite::initWithPath(const std::filesystem::path& path) {
     texture_ = AssetManager::get()->fetchTexture(path);
     if (!texture_) {
@@ -80,7 +92,7 @@ void Sprite::draw(Graphics* gfx) {
         textureTransform = spriteFrame_->getTextureTransform();
     }
 
-    gfx->drawSprite(texture, positionTransform, textureTransform, renderColor_, sharedSpriteWrapParameters);
+    gfx->drawSprite(texture, positionTransform, textureTransform, renderColor_, sharedSpriteWrapParameters, blendingEnabled_);
 }
 
 bool Sprite::init() {

@@ -22,6 +22,10 @@ void ColorNode::setOpacity(u8 opacity) {
     opacity_ = opacity;
     renderColor_.a = opacity / 255.0f;
 }
+void ColorNode::setOpacityF(float unitOpacity) {
+    opacity_ = static_cast<u8>(unitOpacity * 255.0f);
+    renderColor_.a = unitOpacity;
+}
 
 const Color3B &ColorNode::getColor() const {
     return color_;

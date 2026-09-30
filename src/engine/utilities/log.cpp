@@ -20,11 +20,11 @@ void log::quit() {
 }
 
 void log::log(const std::string& msg, const std::string& uncolored) {
-    std::cout << msg << '\n';
-    if (logStream.is_open()) {
-        logStream << uncolored << '\n';
-        logStream.flush();
-    }
+    std::cout << uncolored << '\n';
+    // if (logStream.is_open()) {
+    //     logStream << uncolored << '\n';
+    //     logStream.flush();
+    // }
 }
 
 };

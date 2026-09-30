@@ -141,7 +141,7 @@ void TilingSprite::draw(Graphics *gfx) {
 
     glm::mat4 posTransform = getWorldTransform() * spriteSizeTransform_;
 
-    gfx->drawSprite(texture_, posTransform, texTransform, renderColor_, wrapParameters_);
+    gfx->drawSprite(texture_, posTransform, texTransform, renderColor_, wrapParameters_, false);
 }
 
 bool TilingSprite::init() {

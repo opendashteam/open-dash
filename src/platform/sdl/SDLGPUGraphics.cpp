@@ -4,7 +4,8 @@
 #include <set>
 #include "../../../assets/shaders/common.h"
 #include "../../engine/AssetManager.h"
-#include "../../engine/core/macros.h"
+#include "../../engine/utilities/MathUtils.h"
+#include "../../engine/core/Director.h"
 
 using namespace opendash::engine;
 
@@ -35,6 +36,11 @@ SDLGPUGraphics::~SDLGPUGraphics()
     
     for (const auto& [_, circleBuffer] : circleBuffers_)
         release(circleBuffer);
+
+    for (const auto& [_, circleBuffer] : outlineCircleBuffers_) {
+        release(circleBuffer.vertexBuffer);
+        release(circleBuffer.indexBuffer);
+    }
 
     SDL_ReleaseWindowFromGPUDevice(device_, window_);
     SDL_DestroyGPUDevice(device_);
@@ -368,9 +374,15 @@ void SDLGPUGraphics::drawSpriteBatch(
     SDL_DrawGPUIndexedPrimitives(renderPass_, count * 6, 1, 0, 0, 0);
 }
 
-struct CircleUBO {
+struct SolidUBO {
     std140_mat4 positionTransform;
     std140_vec4 color;
+};
+
+struct SolidOutlineUBO {
+    std140_mat4 positionTransform;
+    std140_vec4 color;
+    float lineWidth;
 };
 
 void SDLGPUGraphics::drawFilledCircle(const glm::mat4 &positionTransform, const Color4F &color, u32 segments, bool blending)
@@ -381,19 +393,7 @@ void SDLGPUGraphics::drawFilledCircle(const glm::mat4 &positionTransform, const 
     SDL_GPUBuffer* buffer = nullptr;
 
     if (!circleBuffers_.contains(segments)) {
-        std::vector<Point> points{};
-
-        const float radiansPerSegment = 2.0f * CC_PI / segments;
-        for (u32 i = 0; i < segments; i++) {
-            float radians = i * radiansPerSegment;
-
-            float x = cosf(radians);
-            float y = sinf(radians);
-
-            points.push_back({x, y});
-            points.push_back({0.0f, 0.0f}); // Zigzag for triangle-strip to work
-        }
-        points.push_back(points[0]);
+        auto points = computeCirclePoints(segments);
         buffer = createStaticGPUBuffer(points.size() * sizeof(Point), SDL_GPU_BUFFERUSAGE_VERTEX, (void*)points.data());
 
         circleBuffers_.emplace( // Cache it once created
@@ -409,13 +409,69 @@ void SDLGPUGraphics::drawFilledCircle(const glm::mat4 &positionTransform, const 
     SDL_GPUBufferBinding vertexBinding{};
     vertexBinding.buffer = buffer;
 
-    CircleUBO ubo{ positionTransform, Color4F::toVector(color) };
+    SolidUBO ubo{ positionTransform, Color4F::toVector(color) };
 
-    SDL_PushGPUVertexUniformData(commandBuffer_, UNIFORM_SLOT_CIRCLE_UBO, &ubo, sizeof(ubo));
-    SDL_BindGPUGraphicsPipeline(renderPass_, solidPipeline_);
+    SDL_PushGPUVertexUniformData(commandBuffer_, UNIFORM_SLOT_SOLID_UBO, &ubo, sizeof(ubo));
+    SDL_BindGPUGraphicsPipeline(renderPass_, blending ? solidBlendingPipeline_ : solidPipeline_);
     
     SDL_BindGPUVertexBuffers(renderPass_, 0, &vertexBinding, 1);
-    SDL_DrawGPUPrimitives(renderPass_, (segments * 2 + 1), 1, 0, 0);
+    SDL_DrawGPUPrimitives(renderPass_, segments, 1, 0, 0);
+}
+
+OutlineMeshBuffers SDLGPUGraphics::createOutlineCircleBuffers(u32 segments) {
+    OutlineMesh mesh = computeOutlineCirclePoints(segments);
+
+    SDL_GPUBuffer* vertexBuffer = createStaticGPUBuffer(
+        mesh.vertices.size() * sizeof(OutlineVertex),
+        SDL_GPU_BUFFERUSAGE_VERTEX,
+        mesh.vertices.data()
+    );
+
+    SDL_GPUBuffer* indexBuffer = createStaticGPUBuffer(
+        mesh.indices.size() * sizeof(u32),
+        SDL_GPU_BUFFERUSAGE_INDEX,
+        mesh.indices.data()
+    );
+
+    return { vertexBuffer, indexBuffer, (u32)mesh.indices.size() };
+}
+
+void SDLGPUGraphics::drawOutlineCircle(const glm::mat4 &positionTransform, const engine::Color4F &color, engine::u32 segments, engine::u32 lineWidthPx, bool blending) {
+    assert(commandBuffer_ && Director::get() != nullptr);
+
+    // Cache buffer per segment count lazily
+    OutlineMeshBuffers buffers{};
+
+    if (!outlineCircleBuffers_.contains(segments)) {
+        auto points = computeOutlineCirclePoints(segments);
+
+        buffers = createOutlineCircleBuffers(segments);
+
+        outlineCircleBuffers_.emplace( // Cache it once created
+            segments,
+            buffers
+        );
+    }
+    else buffers = outlineCircleBuffers_.at(segments);
+
+    float lineWidthPhysicalPixels = lineWidthPx / Director::get()->getScreenScale();
+
+    SolidOutlineUBO ubo{ positionTransform, Color4F::toVector(color), lineWidthPhysicalPixels };
+
+    SDL_BindGPUGraphicsPipeline(renderPass_, blending ? solidOutlineBlendingPipeline_ : solidOutlinePipeline_);
+    SDL_PushGPUVertexUniformData(commandBuffer_, UNIFORM_SLOT_SOLID_OUTLINE_UBO, &ubo, sizeof(ubo));
+
+    SDL_GPUBufferBinding indexBinding{};
+    indexBinding.buffer = buffers.indexBuffer;
+    indexBinding.offset = 0;
+
+    SDL_GPUBufferBinding vertexBinding{};
+    vertexBinding.buffer = buffers.vertexBuffer;
+
+    SDL_BindGPUIndexBuffer(renderPass_, &indexBinding, SDL_GPU_INDEXELEMENTSIZE_32BIT);
+    SDL_BindGPUVertexBuffers(renderPass_, 0, &vertexBinding, 1);
+
+    SDL_DrawGPUIndexedPrimitives(renderPass_, buffers.indexCount, 1, 0, 0, 0);
 }
 
 struct SpritePropertiesUBO {
@@ -429,7 +485,8 @@ void SDLGPUGraphics::drawSprite(
     const glm::mat4& positionTransform,
     const glm::mat3& textureTransform,
     const Color4F& color,
-    const TextureWrapParameters& wrapParams
+    const TextureWrapParameters& wrapParams,
+    bool blending
 ) {
     assert(commandBuffer_);
 
@@ -438,7 +495,7 @@ void SDLGPUGraphics::drawSprite(
     SpritePropertiesUBO ubo = { positionTransform, textureTransform, Color4F::toVector(color) };
 
     SDL_PushGPUVertexUniformData(commandBuffer_, UNIFORM_SLOT_SPRITE_PROPERTIES, &ubo, sizeof(ubo));
-    SDL_BindGPUGraphicsPipeline(renderPass_, defaultSpritePipeline_);
+    SDL_BindGPUGraphicsPipeline(renderPass_, blending ? defaultSpriteBlendingPipeline_ : defaultSpritePipeline_);
 
     SDL_GPUBufferBinding vertexBinding{};
     vertexBinding.buffer = quadVertexBuffer_;
@@ -581,7 +638,8 @@ SDL_GPUGraphicsPipeline* SDLGPUGraphics::createGraphicsPipeline(
     SDL_GPUPrimitiveType primitive,
     const std::vector<VertexAttribute>& attributes,
     SDL_GPUShader* vertexShader,
-    SDL_GPUShader* fragmentShader
+    SDL_GPUShader* fragmentShader,
+    bool additiveBlending
 ) {
     u32 pitch = 0;
     for (const auto& attrib : attributes)
@@ -612,7 +670,7 @@ SDL_GPUGraphicsPipeline* SDLGPUGraphics::createGraphicsPipeline(
     colorTarget.blend_state.color_blend_op = SDL_GPU_BLENDOP_ADD;
     colorTarget.blend_state.alpha_blend_op = SDL_GPU_BLENDOP_ADD;
     colorTarget.blend_state.src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
-    colorTarget.blend_state.dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+    colorTarget.blend_state.dst_color_blendfactor = additiveBlending ? SDL_GPU_BLENDFACTOR_ONE : SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
     colorTarget.blend_state.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
     colorTarget.blend_state.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
@@ -635,16 +693,22 @@ SDL_GPUGraphicsPipeline* SDLGPUGraphics::createGraphicsPipeline(
 
 bool SDLGPUGraphics::setupPipelines()
 {
-    SDL_GPUShader* batchVertexShader    = loadShader("spriteBatch.vert", SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
-    SDL_GPUShader* spriteVertexShader   = loadShader("sprite.vert",      SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
-    SDL_GPUShader* fragmentShader       = loadShader("sprite.frag",      SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0);
-    SDL_GPUShader* solidVertexShader   = loadShader("solid.vert",      SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
-    SDL_GPUShader* solidFragmentShader = loadShader("solid.frag",      SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0);
+    SDL_GPUShader* batchVertexShader          = loadShader("sprite_batch.vert",  SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
+    SDL_GPUShader* spriteVertexShader         = loadShader("sprite.vert",        SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
+    SDL_GPUShader* fragmentShader             = loadShader("sprite.frag",        SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0);
+    SDL_GPUShader* solidVertexShader          = loadShader("solid.vert",         SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
+    SDL_GPUShader* solidFragmentShader        = loadShader("solid.frag",         SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0);
+    SDL_GPUShader* solidOutlineVertexShader   = loadShader("solid_outline.vert", SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
+    SDL_GPUShader* solidOutlineFragmentShader = loadShader("solid_outline.frag", SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 2);
 
     if (
         !batchVertexShader ||
         !spriteVertexShader ||
-        !fragmentShader
+        !fragmentShader ||
+        !solidVertexShader ||
+        !solidFragmentShader ||
+        !solidOutlineVertexShader ||
+        !solidOutlineFragmentShader
     ) {
         releaseAllShaders();
         return false;
@@ -656,7 +720,18 @@ bool SDLGPUGraphics::setupPipelines()
             {0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2}
         },
         spriteVertexShader,
-        fragmentShader
+        fragmentShader,
+        false
+    );
+
+    defaultSpriteBlendingPipeline_ = createGraphicsPipeline(
+        SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP,
+        {
+            {0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2}
+        },
+        spriteVertexShader,
+        fragmentShader,
+        true
     );
 
     spriteBatchPipeline_ = createGraphicsPipeline(
@@ -667,7 +742,8 @@ bool SDLGPUGraphics::setupPipelines()
             {2, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4},
         },
         batchVertexShader,
-        fragmentShader
+        fragmentShader,
+        false
     );
 
     solidPipeline_ = createGraphicsPipeline(
@@ -676,15 +752,56 @@ bool SDLGPUGraphics::setupPipelines()
             {0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2}
         },
         solidVertexShader,
-        solidFragmentShader
+        solidFragmentShader,
+        false
+    );
+
+    solidBlendingPipeline_ = createGraphicsPipeline(
+        SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP,
+        {
+            {0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2}
+        },
+        solidVertexShader,
+        solidFragmentShader,
+        true
+    );
+
+    solidOutlinePipeline_ = createGraphicsPipeline(
+        SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
+        {
+            { 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2 }, // a_segStart
+            { 1, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2 }, // a_segEnd
+            { 2, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT  }, // a_side
+            { 3, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT  }, // a_endpoint
+        },
+        solidOutlineVertexShader,
+        solidOutlineFragmentShader,
+        false
+    );
+
+    solidOutlineBlendingPipeline_ = createGraphicsPipeline(
+        SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
+        {
+            { 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2 }, // a_segStart
+            { 1, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2 }, // a_segEnd
+            { 2, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT  }, // a_side
+            { 3, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT  }, // a_endpoint
+        },
+        solidOutlineVertexShader,
+        solidOutlineFragmentShader,
+        true
     );
 
     releaseAllShaders();
 
     return
-        defaultSpritePipeline_ != nullptr &&
-        spriteBatchPipeline_   != nullptr &&
-        solidPipeline_        != nullptr;
+        defaultSpritePipeline_ &&
+        spriteBatchPipeline_ &&
+        solidPipeline_ &&
+        solidBlendingPipeline_ &&
+        defaultSpriteBlendingPipeline_ &&
+        solidOutlinePipeline_ &&
+        solidOutlineBlendingPipeline_;
 }
 
 SDL_GPUBuffer* SDLGPUGraphics::createGPUBuffer(u32 size, SDL_GPUBufferUsageFlags usage) {
