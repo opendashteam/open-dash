@@ -204,37 +204,27 @@ struct Point {
 
     bool operator==(const Point& other) const = default;
 
-    Point operator+(const Point& right) const {
-        return Point(x + right.x, y + right.y);
-    }
+    Point operator+(const Point& right) const { return {x + right.x, y + right.y}; }
+    Point operator-(const Point& right) const { return {x - right.x, y - right.y}; }
+    Point operator*(const Point& right) const { return {x * right.x, y * right.y}; }
+    Point operator/(const Point& right) const { return {x / right.x, y / right.y}; }
 
-    Point operator-(const Point& right) const {
-        return Point(x - right.x, y - right.y);
-    }
+    Point operator+(float a) const { return {x + a, y + a}; }
+    Point operator-(float a) const { return {x - a, y - a}; }
+    Point operator*(float a) const { return {x * a, y * a}; }
+    Point operator/(float a) const { return {x / a, y / a}; }
 
-    Point operator*(const Point& right) const {
-        return Point(x * right.x, y * right.y);
-    }
+    Point& operator+=(const Point& right) { *this = *this + right; return *this; }
+    Point& operator-=(const Point& right) { *this = *this - right; return *this; }
+    Point& operator*=(const Point& right) { *this = *this * right; return *this; }
+    Point& operator/=(const Point& right) { *this = *this / right; return *this; }
 
-    Point operator/(const Point& right) const {
-        return Point(x / right.x, y / right.y);
-    }
+    Point& operator+=(float a) { *this = *this + a; return *this; }
+    Point& operator-=(float a) { *this = *this - a; return *this; }
+    Point& operator*=(float a) { *this = *this * a; return *this; }
+    Point& operator/=(float a) { *this = *this / a; return *this; }
 
-    Point operator+(float a) const {
-        return Point(x + a, y + a);
-    }
-
-    Point operator-(float a) const {
-        return Point(x - a, y - a);
-    }
-
-    Point operator*(float a) const {
-        return Point(x * a, y * a);
-    }
-
-    Point operator/(float a) const {
-        return Point(x / a, y / a);
-    }
+    Point operator-() const { return {-x, -y}; }
 
     Point& operator=(const Point& right) {
         x = right.x;
@@ -242,22 +232,32 @@ struct Point {
         return *this;
     }
 
-    float getLength() {
+    float getLength() const {
         return std::sqrt(x * x + y * y);
     }
 
-    float getLengthSq() {
+    float getLengthSq() const {
         return x * x + y * y;
     }
 
-    float getDistanceSq(const Point& other) {
+    float getDistanceSq(const Point& other) const {
         float dx = other.x - x;
         float dy = other.y - y;
         return (dx * dx + dy * dy);
     }
 
-    float getDistance(const Point& other) {
+    float getDistance(const Point& other) const {
         return std::sqrt(getDistanceSq(other));
+    }
+
+    Point normalize() const {
+        float lenInv = 1.0f / getLength();
+        return { x * lenInv, y * lenInv };
+    }
+
+    // Returns in radians
+    float getAngle() const {
+        return atan2f(y, x);
     }
 
     void swap() {

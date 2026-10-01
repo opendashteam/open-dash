@@ -318,6 +318,7 @@ void SDLGPUGraphics::drawSpriteBatch(
     InternalTexture rawTexture,
     const glm::mat4& positionTransform,
     const engine::Color4F& globalColor,
+    bool blending,
     u32 count
 ) {
     auto batch = (SpriteBatchContainer*)raw;
@@ -350,7 +351,7 @@ void SDLGPUGraphics::drawSpriteBatch(
 
     auto texture = (TextureContainer*)rawTexture;
 
-    SDL_BindGPUGraphicsPipeline(renderPass_, spriteBatchPipeline_);
+    SDL_BindGPUGraphicsPipeline(renderPass_, blending ? spriteBatchBlendingPipeline_ : spriteBatchPipeline_);
 
     SDL_GPUBufferBinding vertexBinding{};
     vertexBinding.buffer = batch->vertexBuffer;
@@ -738,6 +739,18 @@ bool SDLGPUGraphics::setupPipelines()
         batchVertexShader,
         fragmentShader,
         false
+    );
+
+    spriteBatchBlendingPipeline_ = createGraphicsPipeline(
+        SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
+        {
+            {0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2},
+            {1, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2},
+            {2, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4},
+        },
+        batchVertexShader,
+        fragmentShader,
+        true
     );
 
     solidPipeline_ = createGraphicsPipeline(

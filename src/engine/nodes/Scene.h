@@ -12,7 +12,7 @@ class Scene : public Node {
 public:
     CREATE_FUNC(Scene)
     virtual void render(Graphics* gfx);
-    virtual void update(float dt);
+    virtual void update(float dt) override;
     virtual void onViewResized();
 
     void setClearColor(const Color4F& clearColor);

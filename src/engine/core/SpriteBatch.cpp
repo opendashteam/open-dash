@@ -63,12 +63,12 @@ void SpriteBatch::setSpriteFrame(
     setSpriteFrame(index, spriteFrame, transform, color);
 }
 
-void SpriteBatch::draw(Texture* texture, const glm::mat4& transform, const Color4F& color) {
+void SpriteBatch::draw(Texture* texture, const glm::mat4& transform, const Color4F& color, bool blending) {
     if (size_ == 0)
         return;
 
     Graphics* gfx = platform::Window::getGraphics();
-    gfx->drawSpriteBatch(internal_, texture->getInternalObject(), transform, color, size_);
+    gfx->drawSpriteBatch(internal_, texture->getInternalObject(), transform, color, blending, size_);
 }
 
 std::unique_ptr<SpriteBatch> SpriteBatch::create() {

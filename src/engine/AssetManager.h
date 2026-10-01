@@ -41,9 +41,13 @@ public:
     */
     void releaseAllTextures();
 
+    void releaseAllFonts();
+
     Texture* fetchTexture(const std::filesystem::path& path);
 
     BMFont* fetchFont(std::string_view name);
+
+    PList* fetchParticleSystemOptions(const std::filesystem::path& path);
 
     inline const std::unordered_map<std::string, SpriteFrame*>& getSpriteFrames() const {
         return spriteFrames_;
@@ -64,6 +68,8 @@ private:
     std::unordered_map<std::string, SpriteFrame*> spriteFrames_;
 
     std::unordered_map<std::string, BMFont*> fonts_;
+
+    std::unordered_map<std::filesystem::path, std::unique_ptr<PList>> particleSystemOptions_;
 };
 
 }

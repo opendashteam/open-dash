@@ -34,14 +34,14 @@ public:
 
     inline bool fetchInteger(std::string_view key, int& out) const {
         PList* node = getNode(key);
-        if (!node || !node->isInteger()) return false;
-        out = node->intValue_;
+        if (!node || (!node->isInteger() && !node->isFloat())) return false;
+        out = node->isInteger() ? node->intValue_ : (int)node->floatValue_;
         return true;
     }
     inline bool fetchFloat(std::string_view key, float& out) const {
         PList* node = getNode(key);
-        if (!node || !node->isFloat()) return false;
-        out = node->floatValue_;
+        if (!node || (!node->isFloat() && !node->isInteger())) return false;
+        out = node->isFloat() ? node->floatValue_ : (float)node->intValue_;
         return true;
     }
     inline bool fetchString(std::string_view key, std::string& out) const {
@@ -80,7 +80,7 @@ private:
 private:
     Type type_;
     int intValue_;
-    int floatValue_;
+    float floatValue_;
     std::string stringValue_;
     bool booleanValue_;
     std::map<std::string, PList*> dictValue_;

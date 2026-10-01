@@ -13,6 +13,7 @@ void Director::end() {
     platform::Window::setInputScheduler(nullptr);
 
     AssetManager::get()->releaseAllTextures();
+    AssetManager::get()->releaseAllFonts();
 }
 
 void Director::computeDeltaTime() {

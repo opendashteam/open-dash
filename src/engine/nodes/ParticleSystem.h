@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Node.h"
+#include "../utilities/MathUtils.h"
+#include "../core/SpriteBatch.h"
 
 namespace opendash::engine {
 
@@ -11,7 +13,7 @@ struct Particle {
     float   size,  deltaSize;
     float   rot,   deltaRot;
 
-    float timeToLive;
+    float remainingLife;
     float lifetimeInverse;
     float timeProgress;
 
@@ -32,22 +34,39 @@ struct Particle {
     } gravityMode;
 
     struct {
-        float angle;
-        float angleCos, angleSin;
+        float angle, rotatePerSecond;
         float radius, deltaRadius;
+        Point angleVectorIfNotRotating;
     } radiusMode;
 };
 
 struct VaryingNumber {
     float value = 0.0f, variance = 0.0f;
+
+    inline float get() const {
+        return value + variance * randomMinus1And1();
+    }
+
+    inline float getClamped(float min, float max) const {
+        return std::clamp(get(), min, max);
+    }
 };
 
 struct VaryingPoint {
     Point value, variance;
+
+    inline Point get() {
+        return {
+            value.x + variance.x * randomMinus1And1(),
+            value.y + variance.y * randomMinus1And1()
+        };
+    }
 };
 
 struct VaryingColor {
     Color4F value, variance;
+
+    Color4F get(bool rgbVarSync);
 };
 
 enum class ParticleMode {
@@ -55,11 +74,60 @@ enum class ParticleMode {
     Radius
 };
 
-class ParticleSystem : Node {
+enum class PositionType {
+    Free,
+    Relative,
+    Grouped
+};
+
+class ParticleSystem : public Node {
 public:
-    bool applyPListProperties(PList* plist);
+    bool applyPListOptions(PList* plist);
 
     bool setTotalParticles(u32 totalParticles);
+
+    inline u32 getTotalParticles() const {
+        return particles_.size();
+    }
+
+    virtual void update(float dt) override;
+
+    virtual void draw(Graphics* gfx) override;
+
+    // Equivalent to `CCParticleSystem::stopSystem`
+    void stop();
+
+    // Equivalent to `CCParticleSystem::resetSystem`
+    void reset();
+
+    // Equivalent to `CCParticleSystem::resumeSystem`
+    inline void resume() {
+        isActive_ = true;
+    }
+
+    void setTexture(Texture* texture);
+
+    bool setTexture(const std::filesystem::path& texturePath);
+
+public:
+    CREATE_FUNC(ParticleSystem);
+    static std::unique_ptr<ParticleSystem> create(const std::filesystem::path& plistPath);
+
+protected:
+    bool init() override;
+
+private:
+    void initParticle(Particle* particle);
+
+    bool addParticle();
+
+    bool updateParticle(Particle* particle, float dt);
+
+    void removeParticle(Particle* particle);
+
+    Point getParticleAbsolutePosition(Particle* particle);
+
+    inline bool isFull() const { return particleCount_ >= getTotalParticles(); }
 
 public:
     // These are all the properties of the particle system
@@ -67,7 +135,8 @@ public:
     VaryingNumber angle;
     VaryingPoint  sourcePos;
 
-    u32 totalParticles = 0;
+    PositionType positionType = PositionType::Free;
+
     float duration = 0.0f;
     float emissionRate = 0.0f;
 
@@ -90,7 +159,10 @@ public:
     bool orderSensitive = false;
     bool startRGBVarSync = false, endRGBVarSync = false;
 
-    ParticleMode particleMode;
+    ParticleMode particleMode = ParticleMode::Gravity;
+
+    bool useUniformColor = false;
+    Color4F uniformStartColor, uniformEndColor;
 
     struct {
         Point gravity = {0, 0};
@@ -105,7 +177,22 @@ public:
         VaryingNumber rotatePerSecond;
     } radiusMode;
 
-    int blendFuncSrc, blendFuncDst;
+    bool additiveBlending = false;
+
+private:
+    bool isActive_ = true;
+
+    float emissionCounter_ = 0.0f;
+    float elapsedTime_ = 0.0f;
+
+    Texture* texture_ = nullptr;
+    bool spriteBatchDirty_ = true;
+    std::unique_ptr<SpriteBatch> spriteBatch_;
+
+    u32 particleCount_ = 0;
+    std::vector<Particle> particles_;
+
+    Point currentPosition_;
 };
 
 };

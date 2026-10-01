@@ -64,6 +64,7 @@ public:
         InternalTexture rawTexture,
         const glm::mat4& positionTransform,
         const Color4F& globalColor,
+        bool blending,
         u32 count
     ) = 0;
 

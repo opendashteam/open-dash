@@ -35,9 +35,15 @@ public:
     void removeChild(Node* child);
 
     virtual ~Node();
+
+    virtual void update(float dt);
     
     virtual void draw(Graphics* gfx);
     virtual void visit(Graphics* gfx);
+
+    // TEMPORARY: Until we have an update scheduler
+    inline void scheduleUpdate() { shouldScheduleUpdate_ = true; }
+    inline void unscheduleUpdate() { shouldScheduleUpdate_ = false; }
 
     // setters
     virtual void setPosition(const Point& position);
@@ -197,6 +203,9 @@ private:
     bool isVisible_ = true;
 
     u32 activeTweenCount_ = 0;
+
+    // TEMPORARY: Until we have an update scheduler
+    bool shouldScheduleUpdate_ = false;
 };
 
 }

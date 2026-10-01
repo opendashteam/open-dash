@@ -14,6 +14,25 @@ inline float rad(float degrees) {
     return degrees * 0.01745329252f; // Match CC_DEGREES_TO_RADIANS
 }
 
+inline float randomMinus1And1() { // Match CCRANDOM_MINUS1_1
+    return (2.0f * ( (float)rand() / RAND_MAX) ) - 1.0f;
+}
+
+inline float clampAngle(float angle) {
+    if (angle > 360.0f)
+        return angle - 360.0f;
+    if (angle < 0.0f)
+        return angle + 360.0f;
+    return angle;
+}
+
+inline float getPerpendicularAngleCCW(float angle) {
+    if (angle > 270.0f)
+        return angle - 270.0f;
+    else
+        return angle + 90.0f;
+}
+
 inline std::vector<Point> computeCirclePoints(u32 segments) {
     std::vector<Point> points{};
 

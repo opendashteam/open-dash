@@ -151,8 +151,7 @@ bool AssetManager::loadSpriteSheet(const std::filesystem::path& relativePath) {
     return true;
 }
 
-void AssetManager::releaseAllTextures()
-{
+void AssetManager::releaseAllTextures() {
     for (auto [key, value] : spriteFrames_)
         delete value;
 
@@ -168,15 +167,19 @@ void AssetManager::releaseAllTextures()
     cachedTextures_.clear();
 }
 
-Texture* AssetManager::fetchTexture(const std::filesystem::path& path)
-{
+void AssetManager::releaseAllFonts() {
+    for (auto& [path, font] : fonts_)
+        delete font;
+    fonts_.clear();
+}
+
+Texture* AssetManager::fetchTexture(const std::filesystem::path& path) {
     if (!isTextureCached(path) && !cacheTexture(path))
         return nullptr;
     return getCachedTexture(path);
 }
 
-BMFont* AssetManager::fetchFont(std::string_view name)
-{
+BMFont* AssetManager::fetchFont(std::string_view name) {
     auto nameStr = std::string(name);
 
     auto it = fonts_.find(nameStr);
@@ -189,6 +192,23 @@ BMFont* AssetManager::fetchFont(std::string_view name)
 
     fonts_[nameStr] = font;
     return font;
+}
+
+PList* AssetManager::fetchParticleSystemOptions(const std::filesystem::path& path) {
+    auto it = particleSystemOptions_.find(path);
+    if (it != particleSystemOptions_.end())
+        return it->second.get();
+
+    auto plist = PList::load(getFullPath(path));
+    if (!plist) {
+        log::err("Could not load particle system options at path {}", path.string());
+        return nullptr;
+    }
+
+    auto ret = plist.get();
+
+    particleSystemOptions_[path] = std::move(plist);
+    return ret;
 }
 
 bool AssetManager::init()

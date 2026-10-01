@@ -89,11 +89,19 @@ void Node::removeChild(Node* child) {
 
 Node::~Node() {}
 
+void Node::update(float dt) {
+    // override me
+}
+
 void Node::draw(Graphics* gfx) {
     // override me
 }
 
 void Node::visit(Graphics* gfx) {
+    // TEMPORARY: Until we have an update scheduler
+    if (shouldScheduleUpdate_)
+        update(Director::get()->getDeltaTime());
+
     if (!isVisible_) return;
 
     this->draw(gfx); // draw self
@@ -404,7 +412,7 @@ glm::mat4 Node::computeLocalTransformMatrix() {
         transform = transform * skewMatrix;
     }
 
-    transform = glm::scale(transform, glm::vec3(scale_.x, scale_.y, 1.0f));
+    transform = glm::scale(transform, glm::vec3(scale_.x, scale_.y, 0.0f));
 
     transform = glm::translate(transform, glm::vec3(
         -anchorPoint_.x * contentSize_.width,

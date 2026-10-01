@@ -64,6 +64,7 @@ public:
         engine::InternalTexture rawTexture,
         const glm::mat4& positionTransform,
         const engine::Color4F& globalColor,
+        bool blending,
         engine::u32 count
     );
 
@@ -175,8 +176,9 @@ private:
     // PIPELINES //
     SDL_GPUGraphicsPipeline* defaultSpritePipeline_ = nullptr;
     SDL_GPUGraphicsPipeline* defaultSpriteBlendingPipeline_ = nullptr;
-    SDL_GPUGraphicsPipeline* spriteBatchPipeline_   = nullptr;
-    SDL_GPUGraphicsPipeline* solidPipeline_         = nullptr;
+    SDL_GPUGraphicsPipeline* spriteBatchPipeline_ = nullptr;
+    SDL_GPUGraphicsPipeline* spriteBatchBlendingPipeline_ = nullptr;
+    SDL_GPUGraphicsPipeline* solidPipeline_ = nullptr;
     SDL_GPUGraphicsPipeline* solidBlendingPipeline_ = nullptr;
     SDL_GPUGraphicsPipeline* solidOutlinePipeline_ = nullptr;
     SDL_GPUGraphicsPipeline* solidOutlineBlendingPipeline_ = nullptr;

@@ -28,6 +28,13 @@ bool ExampleScene::init() {
     exampleSprite_ = addChild(Sprite::create("cube.png"));
     exampleSprite_->setPosition(Director::get()->getVisibleSize() / 2);
 
+    auto ps = addChild(ParticleSystem::create("speedEffect.plist"));
+    ps->positionType = PositionType::Relative;
+    ps = addChild(ParticleSystem::create("portalEffect01.plist"));
+    ps->positionType = PositionType::Relative;
+    ps = addChild(ParticleSystem::create("ringEffect.plist"));
+    ps->positionType = PositionType::Relative;
+
     // auto fireInTheHole = addChild(Sprite::createWithFrame("diffIcon_04_btn_001.png"));
     // fireInTheHole->setPosition(Director::get()->getVisibleSize() / 2);
     // fireInTheHole->enableBlending();
