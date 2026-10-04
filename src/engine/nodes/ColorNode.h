@@ -20,6 +20,8 @@ public:
     const Color4F& getRenderColor() const;
 
 protected:
+    virtual void onRenderColorChanged();
+
     Color4F renderColor_ = {1.0f, 1.0f, 1.0f, 1.0f};
     Color3B color_ = {255, 255, 255};
     u8 opacity_ = 255;

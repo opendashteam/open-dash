@@ -24,6 +24,9 @@ public:
         // TODO: might need to check if child already exists, maybe not
         if (child) {
             child->parent_ = this;
+            child->updateEffectiveIgnoreCameraPosition(
+                effectiveIgnoreCameraPosition_
+            );
         }
 
         T* raw = child.get();
@@ -74,6 +77,7 @@ public:
     virtual void setAutoHeight(AutoSize autoHeight);
     virtual void setLayout(std::unique_ptr<Layout> layout);
     virtual void setIgnoreLayout(bool ignore);
+    virtual void setIgnoreCameraPosition(bool ignoreCameraPosition);
 
     /*
         Items will be layed out horizontally from
@@ -118,6 +122,7 @@ public:
     virtual Layout* getLayout() const;
     virtual bool isIgnoreLayout() const;
     virtual int getChildCount() const;
+    virtual bool getIgnoreCameraPosition() const;
 
     // relative transformations
     virtual void rotateBy(float deltaDegrees);
@@ -173,7 +178,7 @@ private:
     void layout();
 
     friend class Director;
-
+    void updateEffectiveIgnoreCameraPosition(bool inheritedIgnore);
 private:
     std::vector<std::unique_ptr<Node>> children_ = {};
     Node* parent_ = nullptr;
@@ -201,6 +206,8 @@ private:
 
     // state
     bool isVisible_ = true;
+    bool ignoreCameraPosition_ = false;
+    bool effectiveIgnoreCameraPosition_ = false;
 
     u32 activeTweenCount_ = 0;
 

@@ -1,5 +1,4 @@
 #include "Scene.h"
-#include "../core/types.h"
 
 namespace opendash::engine
 {
@@ -11,27 +10,21 @@ bool Scene::init()
 }
 
 void Scene::render(Graphics* gfx) {
-    for (auto& child : getChildren()) {
-        child->visit(gfx);
-    }
+    visit(gfx);
 }
 
 void Scene::update(float dt) {
-    // override me
+    // Override me
 }
 
 void Scene::onViewResized() {
-    // override me
+    // Override me
 
     // E.g. UI layout refresh on window resize
 }
 
-void Scene::setClearColor(const Color4F &clearColor) {
-    clearColor_ = clearColor;
-}
-
-const Color4F& Scene::getClearColor() const {
-    return clearColor_;
+void Scene::onCameraMoved() {
+    // Override me
 }
 
 }

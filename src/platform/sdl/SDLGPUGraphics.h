@@ -22,10 +22,20 @@ struct OutlineMeshBuffers {
 
 struct PipelineBlendPair {
     SDL_GPUGraphicsPipeline* normal = nullptr;
-    SDL_GPUGraphicsPipeline* blending = nullptr;
+    SDL_GPUGraphicsPipeline* additive = nullptr;
+    SDL_GPUGraphicsPipeline* multiplicative = nullptr;
 
-    inline SDL_GPUGraphicsPipeline* get(bool isBlending) {
-        return isBlending ? blending : normal;
+    inline SDL_GPUGraphicsPipeline* getWithAddBlend(bool useAdditive) {
+        return useAdditive ? additive : normal;
+    }
+
+    inline SDL_GPUGraphicsPipeline* getWithBlendMode(engine::BlendMode mode) {
+        switch (mode) {
+        default:
+        case engine::BlendMode::Normal: return normal;
+        case engine::BlendMode::Additive: return additive;
+        case engine::BlendMode::Multiplicative: return multiplicative;
+        }
     }
 };
 
@@ -80,7 +90,7 @@ public:
         const glm::mat3& textureTransform,
         const engine::Color4F& color,
         const engine::TextureWrapParameters& wrapParams,
-        bool blending
+        engine::BlendMode blendMode
     );
 
     virtual void drawSpriteBatch(
@@ -125,14 +135,15 @@ private:
         const std::vector<VertexAttribute>& attributes,
         SDL_GPUShader* vertexShader,
         SDL_GPUShader* fragmentShader,
-        bool additiveBlending = false
+        engine::BlendMode blendMode
     );
 
     PipelineBlendPair createPipelineBlendPair(
         SDL_GPUPrimitiveType primitive,
         const std::vector<VertexAttribute>& attributes,
         SDL_GPUShader* vertexShader,
-        SDL_GPUShader* fragmentShader
+        SDL_GPUShader* fragmentShader,
+        bool includeMultiplicative = false
     );
 
     bool setupPipelines();

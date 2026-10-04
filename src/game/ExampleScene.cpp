@@ -1,18 +1,22 @@
 #include "ExampleScene.h"
 #include "constants.h"
-// #include "BounceButton.h"
+#include "nodes/Ground.h"
 
 namespace opendash
 {
 
 void ExampleScene::update(float dt) {
+    Director::get()->moveCameraByX(
+        constants::player::kSpeedNormal *
+        constants::player::kTimeModNormal *
+        constants::player::kPhysicsFrameRate *
+        dt
+    );
+}
 
-    if (exampleSprite_) {
-        // exampleSprite_->rotateBy((180.0f / constants::player::kRotationDuration) * dt);
-    }
-    if (batchTest_) {
-        batchTest_->rotateBy((180.0f / constants::player::kRotationDuration) * dt * 0.128);
-    }
+void ExampleScene::onCameraMoved() {
+    // FIXME TEMPORARY, DO NOT RELY ON THIS, IT IS WRONG!!!!!
+    ground_->setScrollX(Director::get()->getCameraPositionX());
 }
 
 bool ExampleScene::init() {
@@ -20,41 +24,45 @@ bool ExampleScene::init() {
         return false; 
     }
 
-    // setClearColor({0.0f, 1.0f, 0.0f, 1.0f});
-
     // Always call addChild first when creating a node
     // to not have to deal with a stale pointer after the 
     // unique_ptr's move operation
     exampleSprite_ = addChild(Sprite::create("cube.png"));
-    exampleSprite_->setPosition(Director::get()->getVisibleSize() / 2);
+    exampleSprite_->setPositionX(Director::get()->getVisibleSize().width / 2 - 75.0f);
+    exampleSprite_->setPositionY(90.0f + 15.0f);
+    exampleSprite_->setIgnoreCameraPosition(true);
 
-    auto ps = addChild(ParticleSystem::create("speedEffect.plist"));
-    ps->positionType = PositionType::Relative;
-    ps = addChild(ParticleSystem::create("portalEffect01.plist"));
-    ps->positionType = PositionType::Relative;
-    ps = addChild(ParticleSystem::create("ringEffect.plist"));
-    ps->positionType = PositionType::Relative;
+    // auto ps = addChild(ParticleSystem::create("speedEffect.plist"));
+    // ps->positionType = PositionType::Relative;
+    // ps = addChild(ParticleSystem::create("portalEffect01.plist"));
+    // ps->positionType = PositionType::Relative;
+    // ps = addChild(ParticleSystem::create("ringEffect.plist"));
+    // ps->positionType = PositionType::Relative;
 
-    // auto fireInTheHole = addChild(Sprite::createWithFrame("diffIcon_04_btn_001.png"));
-    // fireInTheHole->setPosition(Director::get()->getVisibleSize() / 2);
-    // fireInTheHole->enableBlending();
+    // auto visibleSize = Director::get()->getVisibleSize();
 
-    // TIMEWARP
-    Director::get()->setTimeScale(1.0f);
+    // // TIMEWARP
+    // Director::get()->setTimeScale(1.0f);
 
-    Director::get()->scheduleOnce([this]() {
-        addChild(CircleWave::create(
-            constants::presets::kCircleEffectPortalWave
-        ))->setFollowTarget(exampleSprite_);
+    // Director::get()->scheduleOnce([this]() {
+    //     addChild(CircleWave::create(
+    //         constants::presets::kCircleEffectPortalWave
+    //     ))->setFollowTarget(exampleSprite_);
 
-        auto circleEffect = addChild(CircleWave::create(
-            constants::presets::kCircleEffectPortalWaveExtra
-        ));
+    //     auto circleEffect = addChild(CircleWave::create(
+    //         constants::presets::kCircleEffectPortalWaveExtra
+    //     ));
 
-        circleEffect->setPosition(exampleSprite_->getPosition());
-        circleEffect->setColor(Color3B::Green);        
-    }, 1.0f);
+    //     circleEffect->setPosition(exampleSprite_->getPosition());
+    //     circleEffect->setColor(Color3B::Green);        
+    // }, 1.0f);
 
+    ground_ = addChild(Ground::create({
+        .groundID = 1,
+        .lineType = GroundLineType::Normal
+    }));
+
+    ground_->setPositionY(91.0f); // Correct
 
     // Director::get()->createBlinkTween(
     //     exampleSprite_,

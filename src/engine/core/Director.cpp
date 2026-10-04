@@ -89,8 +89,55 @@ void Director::setDesignResolutionSize(const Size &designResolutionSize) {
     designResolutionSize_ = designResolutionSize;
     updateScreenScale();
 }
+
 void Director::setTimeScale(float timeScale) {
     timeScale_ = timeScale;
+}
+
+void Director::updateCameraViewProjection() {
+    projectionMatrix_ = glm::ortho(
+        cameraPosition_.x, cameraPosition_.x + visibleSize_.width,
+        cameraPosition_.y, cameraPosition_.y + visibleSize_.height,
+        -1.0f, 1.0f
+    );
+    inverseProjectionMatrix_ = glm::inverse(projectionMatrix_);
+}
+
+void Director::setCameraPosition(const Point &cameraPosition) {
+    if (cameraPosition.x == cameraPosition_.x && cameraPosition.y == cameraPosition_.y)
+        return;
+
+    cameraPosition_ = cameraPosition;
+
+    if (currentScene_) {
+        currentScene_->onCameraMoved();
+    }
+
+    updateCameraViewProjection();
+}
+
+void Director::setCameraPosition(float x, float y) {
+    setCameraPosition({x, y});
+}
+
+void Director::setCameraPositionX(float cameraPositionX) {
+    setCameraPosition({cameraPositionX, cameraPosition_.y});
+}
+
+void Director::setCameraPositionY(float cameraPositionY) {
+    setCameraPosition({cameraPosition_.x, cameraPositionY});
+}
+
+void Director::moveCameraBy(float deltaX, float deltaY) {
+    setCameraPosition({cameraPosition_.x + deltaX, cameraPosition_.y + deltaY});
+}
+
+void Director::moveCameraByX(float deltaX) {
+    setCameraPosition({cameraPosition_.x + deltaX, cameraPosition_.y});
+}
+
+void Director::moveCameraByY(float deltaY) {
+    setCameraPosition({cameraPosition_.x, cameraPosition_.y + deltaY});
 }
 
 glm::mat4 Director::getProjectionMatrix() const {
@@ -131,6 +178,23 @@ float Director::getTimeScale() const {
 
 float Director::getScaledDeltaTime() const {
     return scaledDeltaTime_;
+}
+
+const Point &Director::getCameraPosition() const { return cameraPosition_; }
+float Director::getCameraPositionX() const { return cameraPosition_.x; }
+float Director::getCameraPositionY() const { return cameraPosition_.y; }
+
+void Director::setUseCameraIndependentProjection(Graphics *gfx, bool cameraIndependent) {
+    if (cameraIndependent == useIndependantCameraProjection_)
+        return;
+
+    useIndependantCameraProjection_ = cameraIndependent;
+
+    gfx->setViewProjectionMatrix(
+        cameraIndependent
+            ? projectionMatrixCameraIndependent_
+            : projectionMatrix_
+    );
 }
 
 const Size& Director::getVisibleSize() const {
@@ -260,8 +324,14 @@ void Director::updateScreenScale()
     screenScaleFactor_    = std::min(screenScaleFactorW_, screenScaleFactorH_);
     screenScaleFactorMax_ = std::max(screenScaleFactorW_, screenScaleFactorH_);
 
-    projectionMatrix_ = glm::ortho(0.0f, visibleSize_.width, 0.0f, visibleSize_.height, -1.0f, 1.0f);
-    inverseProjectionMatrix_ = glm::inverse(projectionMatrix_);
+    updateCameraViewProjection();
+
+    projectionMatrixCameraIndependent_ = glm::ortho(
+        0.0f, visibleSize_.width,
+        0.0f, visibleSize_.height,
+        -1.0f, 1.0f
+    );
+    inverseProjectionMatrixCameraIndependent_ = glm::inverse(projectionMatrixCameraIndependent_);
 }
 
 void Director::onWindowResized(const Size &frameSize)

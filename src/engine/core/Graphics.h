@@ -70,7 +70,7 @@ public:
         const glm::mat3& textureTransform,
         const Color4F& color,
         const engine::TextureWrapParameters& wrapParams,
-        bool blending
+        engine::BlendMode blendMode
     ) = 0;
 
     inline void drawSprite(
@@ -79,9 +79,9 @@ public:
         const glm::mat3& textureTransform,
         const Color4F& color,
         const engine::TextureWrapParameters& wrapParams,
-        bool blending
+        engine::BlendMode blendMode
     ) {
-        drawSprite(texture->getInternalObject(), positionTransform, textureTransform, color, wrapParams, blending);
+        drawSprite(texture->getInternalObject(), positionTransform, textureTransform, color, wrapParams, blendMode);
     }
 
     virtual void drawFilledCircle(

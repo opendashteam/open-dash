@@ -395,10 +395,10 @@ void SDLGPUGraphics::drawMesh(
 
     SDL_PushGPUVertexUniformData(commandBuffer_, UNIFORM_SLOT_MESH_UBO, &ubo, sizeof(ubo));
     if (rawTexture == nullptr)
-        SDL_BindGPUGraphicsPipeline(renderPass_, solidMeshPipeline_.get(blending));
+        SDL_BindGPUGraphicsPipeline(renderPass_, solidMeshPipeline_.getWithAddBlend(blending));
     else {
         auto texture = (TextureContainer*)rawTexture;
-        SDL_BindGPUGraphicsPipeline(renderPass_, textureMeshPipeline_.get(blending));
+        SDL_BindGPUGraphicsPipeline(renderPass_, textureMeshPipeline_.getWithAddBlend(blending));
 
         SDL_GPUTextureSamplerBinding textureBinding{};
         textureBinding.texture = texture->texture;
@@ -458,7 +458,7 @@ void SDLGPUGraphics::drawSpriteBatch(
 
     auto texture = (TextureContainer*)rawTexture;
 
-    SDL_BindGPUGraphicsPipeline(renderPass_, spriteBatchPipeline_.get(blending));
+    SDL_BindGPUGraphicsPipeline(renderPass_, spriteBatchPipeline_.getWithAddBlend(blending));
 
     SDL_GPUBufferBinding vertexBinding{};
     vertexBinding.buffer = batch->vertexBuffer;
@@ -506,7 +506,7 @@ void SDLGPUGraphics::drawFilledCircle(const glm::mat4 &positionTransform, const 
     MeshUBO ubo{ positionTransform, Color4F::toVector(color) };
 
     SDL_PushGPUVertexUniformData(commandBuffer_, UNIFORM_SLOT_MESH_UBO, &ubo, sizeof(ubo));
-    SDL_BindGPUGraphicsPipeline(renderPass_, circlePipeline_.get(blending));
+    SDL_BindGPUGraphicsPipeline(renderPass_, circlePipeline_.getWithAddBlend(blending));
     
     SDL_BindGPUVertexBuffers(renderPass_, 0, &vertexBinding, 1);
     SDL_DrawGPUPrimitives(renderPass_, segments, 1, 0, 0);
@@ -553,7 +553,7 @@ void SDLGPUGraphics::drawOutlineCircle(const glm::mat4 &positionTransform, const
 
     OutlineCircleUBO ubo{ positionTransform, Color4F::toVector(color), lineWidthPhysicalPixels };
 
-    SDL_BindGPUGraphicsPipeline(renderPass_, outlineCirclePipeline_.get(blending));
+    SDL_BindGPUGraphicsPipeline(renderPass_, outlineCirclePipeline_.getWithAddBlend(blending));
     SDL_PushGPUVertexUniformData(commandBuffer_, UNIFORM_SLOT_OUTLINE_CIRCLE_UBO, &ubo, sizeof(ubo));
 
     SDL_GPUBufferBinding indexBinding{};
@@ -581,7 +581,7 @@ void SDLGPUGraphics::drawSprite(
     const glm::mat3& textureTransform,
     const Color4F& color,
     const TextureWrapParameters& wrapParams,
-    bool blending
+    engine::BlendMode blendMode
 ) {
     assert(commandBuffer_);
 
@@ -590,7 +590,7 @@ void SDLGPUGraphics::drawSprite(
     SpritePropertiesUBO ubo = { positionTransform, textureTransform, Color4F::toVector(color) };
 
     SDL_PushGPUVertexUniformData(commandBuffer_, UNIFORM_SLOT_SPRITE_PROPERTIES, &ubo, sizeof(ubo));
-    SDL_BindGPUGraphicsPipeline(renderPass_, defaultSpritePipeline_.get(blending));
+    SDL_BindGPUGraphicsPipeline(renderPass_, defaultSpritePipeline_.getWithBlendMode(blendMode));
 
     SDL_GPUBufferBinding vertexBinding{};
     vertexBinding.buffer = quadVertexBuffer_;
@@ -737,7 +737,7 @@ SDL_GPUGraphicsPipeline* SDLGPUGraphics::createGraphicsPipeline(
     const std::vector<VertexAttribute>& attributes,
     SDL_GPUShader* vertexShader,
     SDL_GPUShader* fragmentShader,
-    bool additiveBlending
+    BlendMode blendMode
 ) {
     u32 pitch = 0;
     for (const auto& attrib : attributes)
@@ -762,13 +762,17 @@ SDL_GPUGraphicsPipeline* SDLGPUGraphics::createGraphicsPipeline(
         offset += getVertexFormatType(raw.format);
     }
 
+    bool additiveBlending = blendMode == BlendMode::Additive;
+    bool multiplicativeBlending = blendMode == BlendMode::Multiplicative;
+
     SDL_GPUColorTargetDescription colorTarget{};
     colorTarget.format = SDL_GetGPUSwapchainTextureFormat(device_, window_);
     colorTarget.blend_state.enable_blend = true;
     colorTarget.blend_state.color_blend_op = SDL_GPU_BLENDOP_ADD;
     colorTarget.blend_state.alpha_blend_op = SDL_GPU_BLENDOP_ADD;
-    colorTarget.blend_state.src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
-    colorTarget.blend_state.dst_color_blendfactor = additiveBlending ? SDL_GPU_BLENDFACTOR_ONE : SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+    colorTarget.blend_state.src_color_blendfactor = multiplicativeBlending ? SDL_GPU_BLENDFACTOR_DST_COLOR : SDL_GPU_BLENDFACTOR_SRC_ALPHA;
+    colorTarget.blend_state.dst_color_blendfactor = multiplicativeBlending ? SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA :
+                                                    additiveBlending ? SDL_GPU_BLENDFACTOR_ONE : SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
     colorTarget.blend_state.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
     colorTarget.blend_state.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
@@ -796,12 +800,17 @@ PipelineBlendPair SDLGPUGraphics::createPipelineBlendPair(
     SDL_GPUPrimitiveType primitive,
     const std::vector<VertexAttribute>& attributes,
     SDL_GPUShader* vertexShader,
-    SDL_GPUShader* fragmentShader
+    SDL_GPUShader* fragmentShader,
+    bool includeMultiplicative
 ) {
-    return {
-        .normal   = createGraphicsPipeline(primitive, attributes, vertexShader, fragmentShader, false),
-        .blending = createGraphicsPipeline(primitive, attributes, vertexShader, fragmentShader, true)
+    PipelineBlendPair pair = {
+        .normal   = createGraphicsPipeline(primitive, attributes, vertexShader, fragmentShader, BlendMode::Normal),
+        .additive = createGraphicsPipeline(primitive, attributes, vertexShader, fragmentShader, BlendMode::Additive)
     };
+
+    if (includeMultiplicative)
+        pair.multiplicative = createGraphicsPipeline(primitive, attributes, vertexShader, fragmentShader, BlendMode::Multiplicative);
+    return pair;
 }
 
 bool SDLGPUGraphics::setupPipelines()
@@ -828,7 +837,8 @@ bool SDLGPUGraphics::setupPipelines()
             {0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2}
         },
         spriteVertexShader,
-        spriteFragmentShader
+        spriteFragmentShader,
+        true
     );
 
     spriteBatchPipeline_ = createPipelineBlendPair(

@@ -5,7 +5,10 @@
 
 namespace opendash::constants
 {
+    inline constexpr int kMinSecondaryGroundID = 8;
+
     namespace player {
+        inline constexpr float kPhysicsFrameRate     = 60.0f;
         inline constexpr float kRotationDuration     = 26.0f / 60.0f;
         inline constexpr float kRotationDurationMini = 20.0f / 60.0f;
 
@@ -42,6 +45,10 @@ namespace opendash::constants
         inline constexpr engine::Size kHitboxSizeDefault{30.0f, 30.0f};
         inline constexpr engine::Size kHitboxSizeSpider{27.0f, 27.0f};
         inline constexpr engine::Size kHitboxSizeWave{10.0f, 10.0f};
+    }
+
+    namespace colors {
+        inline constexpr engine::Color3B kDefaultGroundColor{0, 102, 255};
     }
 
     namespace presets {

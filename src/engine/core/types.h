@@ -351,7 +351,13 @@ struct TextureWrapParameters {
     }
 };
 
-}
+enum class BlendMode {
+    Normal,
+    Additive,
+    Multiplicative
+};
+
+} // end of namespace opendash
 
 // This allows you to use Point, etc.. in the logger and it will be automatically converted
 // Thank you IliasHDZ - StarryDawn72
