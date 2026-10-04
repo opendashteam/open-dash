@@ -1,0 +1,69 @@
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+struct main0_out
+{
+    float4 v_fragColor [[color(0)]];
+};
+
+struct main0_in
+{
+    float2 v_segStart [[user(locn0)]];
+    float2 v_segEnd [[user(locn1)]];
+    float2 v_fragWorldPos [[user(locn2)]];
+    float4 v_color [[user(locn3)]];
+    float v_lineWidth [[user(locn4)]];
+};
+
+fragment main0_out main0(main0_in in [[stage_in]])
+{
+    main0_out out = {};
+    float2 delta = in.v_segEnd - in.v_segStart;
+    float halfWidth = in.v_lineWidth * 0.5;
+    bool shallowLine = abs(delta.y) < abs(delta.x);
+    if (shallowLine)
+    {
+        float t = (in.v_fragWorldPos.x - in.v_segStart.x) / delta.x;
+        float lineY = mix(in.v_segStart.y, in.v_segEnd.y, t);
+        float diff = in.v_fragWorldPos.y - lineY;
+        bool _67 = (t < 0.0) || (t > 1.0);
+        bool _75;
+        if (!_67)
+        {
+            _75 = diff < (-halfWidth);
+        }
+        else
+        {
+            _75 = _67;
+        }
+        if (_75 || (diff >= halfWidth))
+        {
+            discard_fragment();
+        }
+    }
+    else
+    {
+        float t_1 = (in.v_fragWorldPos.y - in.v_segStart.y) / delta.y;
+        float lineX = mix(in.v_segStart.x, in.v_segEnd.x, t_1);
+        float diff_1 = in.v_fragWorldPos.x - lineX;
+        bool _109 = (t_1 < 0.0) || (t_1 > 1.0);
+        bool _117;
+        if (!_109)
+        {
+            _117 = diff_1 < (-halfWidth);
+        }
+        else
+        {
+            _117 = _109;
+        }
+        if (_117 || (diff_1 >= halfWidth))
+        {
+            discard_fragment();
+        }
+    }
+    out.v_fragColor = in.v_color;
+    return out;
+}
+

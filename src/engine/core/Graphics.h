@@ -5,6 +5,7 @@
 #include "SpriteBatch.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "Mesh.h"
 
 namespace opendash::engine
 {
@@ -39,6 +40,30 @@ public:
     ) = 0;
     virtual void spriteBatchDestroy(InternalSpriteBatch batch) = 0;
 
+    virtual void drawSpriteBatch(
+        InternalSpriteBatch raw,
+        InternalTexture rawTexture,
+        const glm::mat4& positionTransform,
+        const Color4F& globalColor,
+        bool blending,
+        u32 count
+    ) = 0;
+
+    virtual InternalMesh meshCreate() = 0;
+    virtual void meshResize(InternalMesh mesh, u32 vertexCount) = 0;
+    virtual MeshVertex* meshGetBuffer(InternalMesh mesh) = 0;
+    virtual void meshFlushBufferRange(InternalMesh mesh, u32 firstVertex, u32 vertexCount) = 0;
+    virtual void meshDestroy(InternalMesh mesh) = 0;
+
+    virtual void drawMesh(
+        InternalMesh mesh,
+        const glm::mat4& positionTransform,
+        const Color4F& globalColor,
+        InternalTexture rawTexture,
+        u32 vertexCount,
+        bool blending
+    ) = 0;
+
     virtual void drawSprite(
         InternalTexture texture,
         const glm::mat4& positionTransform,
@@ -59,15 +84,6 @@ public:
         drawSprite(texture->getInternalObject(), positionTransform, textureTransform, color, wrapParams, blending);
     }
 
-    virtual void drawSpriteBatch(
-        InternalSpriteBatch raw,
-        InternalTexture rawTexture,
-        const glm::mat4& positionTransform,
-        const Color4F& globalColor,
-        bool blending,
-        u32 count
-    ) = 0;
-
     virtual void drawFilledCircle(
         const glm::mat4& positionTransform,
         const engine::Color4F& color,
@@ -82,6 +98,9 @@ public:
         engine::u32 lineWidthPx,
         bool blending
     ) = 0;
+
+public:
+    static Graphics* get();
 };
 
 };

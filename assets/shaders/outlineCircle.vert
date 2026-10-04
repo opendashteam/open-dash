@@ -17,7 +17,7 @@ UNIFORM_BUFFER(UNIFORM_SLOT_VIEW_PROJECTION) ViewProjection {
     mat4 viewProjection;
 };
 
-UNIFORM_BUFFER(UNIFORM_SLOT_SOLID_OUTLINE_UBO) SolidOutlineUBO {
+UNIFORM_BUFFER(UNIFORM_SLOT_OUTLINE_CIRCLE_UBO) OutlineCircleUBO {
     mat4 positionTransform;
     vec4 color;
     float lineWidth;

@@ -10,7 +10,7 @@ UNIFORM_BUFFER(UNIFORM_SLOT_VIEW_PROJECTION) ViewProjection {
     mat4 viewProjection;
 };
 
-UNIFORM_BUFFER(UNIFORM_SLOT_SOLID_UBO) SolidUBO {
+UNIFORM_BUFFER(UNIFORM_SLOT_MESH_UBO) MeshUBO {
     mat4 positionTransform;
     vec4 color;
 };

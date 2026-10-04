@@ -20,6 +20,15 @@ struct OutlineMeshBuffers {
     engine::u32 indexCount;
 };
 
+struct PipelineBlendPair {
+    SDL_GPUGraphicsPipeline* normal = nullptr;
+    SDL_GPUGraphicsPipeline* blending = nullptr;
+
+    inline SDL_GPUGraphicsPipeline* get(bool isBlending) {
+        return isBlending ? blending : normal;
+    }
+};
+
 class SDLGPUGraphics : public engine::Graphics
 {
 public:
@@ -49,6 +58,21 @@ public:
         const engine::Color4F& color
     );
     virtual void spriteBatchDestroy(engine::InternalSpriteBatch batch);
+
+    virtual engine::InternalMesh meshCreate();
+    virtual void meshResize(engine::InternalMesh mesh, engine::u32 vertexCount);
+    virtual engine::MeshVertex* meshGetBuffer(engine::InternalMesh mesh);
+    virtual void meshFlushBufferRange(engine::InternalMesh mesh, engine::u32 firstVertex, engine::u32 vertexCount);
+    virtual void meshDestroy(engine::InternalMesh mesh);
+
+    virtual void drawMesh(
+        engine::InternalMesh mesh,
+        const glm::mat4& positionTransform,
+        const engine::Color4F& globalColor,
+        engine::InternalTexture rawTexture,
+        engine::u32 vertexCount,
+        bool blending
+    );
 
     virtual void drawSprite(
         engine::InternalTexture texture,
@@ -101,7 +125,14 @@ private:
         const std::vector<VertexAttribute>& attributes,
         SDL_GPUShader* vertexShader,
         SDL_GPUShader* fragmentShader,
-        bool additiveBlending
+        bool additiveBlending = false
+    );
+
+    PipelineBlendPair createPipelineBlendPair(
+        SDL_GPUPrimitiveType primitive,
+        const std::vector<VertexAttribute>& attributes,
+        SDL_GPUShader* vertexShader,
+        SDL_GPUShader* fragmentShader
     );
 
     bool setupPipelines();
@@ -169,19 +200,21 @@ private:
     std::vector<SDL_GPUShader*> shaders_;
     std::vector<SDL_GPUGraphicsPipeline*> graphicsPipelines_;
 
+    bool allShadersSucceeded = true;
+    bool allPipelinesSucceeded = true;
+
     // DRAW PASS VARIABLES //
     SDL_GPUCommandBuffer* commandBuffer_ = nullptr;
     SDL_GPURenderPass* renderPass_ = nullptr;
 
     // PIPELINES //
-    SDL_GPUGraphicsPipeline* defaultSpritePipeline_ = nullptr;
-    SDL_GPUGraphicsPipeline* defaultSpriteBlendingPipeline_ = nullptr;
-    SDL_GPUGraphicsPipeline* spriteBatchPipeline_ = nullptr;
-    SDL_GPUGraphicsPipeline* spriteBatchBlendingPipeline_ = nullptr;
-    SDL_GPUGraphicsPipeline* solidPipeline_ = nullptr;
-    SDL_GPUGraphicsPipeline* solidBlendingPipeline_ = nullptr;
-    SDL_GPUGraphicsPipeline* solidOutlinePipeline_ = nullptr;
-    SDL_GPUGraphicsPipeline* solidOutlineBlendingPipeline_ = nullptr;
+    PipelineBlendPair defaultSpritePipeline_;
+    PipelineBlendPair spriteBatchPipeline_;
+    PipelineBlendPair circlePipeline_;
+    PipelineBlendPair outlineCirclePipeline_;
+
+    PipelineBlendPair solidMeshPipeline_;
+    PipelineBlendPair textureMeshPipeline_;
 
     // CACHE //
     std::unordered_map<engine::u32, SDL_GPUSampler*> samplers_;
