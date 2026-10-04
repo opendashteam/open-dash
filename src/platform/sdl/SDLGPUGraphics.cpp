@@ -24,23 +24,18 @@ SDLGPUGraphics::~SDLGPUGraphics()
 {
     assert(numTexturesAllocated_ == 0);
 
-    for (const auto& [_, sampler] : samplers_)
-        SDL_ReleaseGPUSampler(device_, sampler);
-
-    for (auto pipeline : graphicsPipelines_)
-        release(pipeline);
-    graphicsPipelines_.clear();
+    gpu::releaseAllObjects();
     
     for (const auto& [_, circleBuffer] : circleBuffers_)
-        release(circleBuffer);
+        gpu::release(circleBuffer);
 
     for (const auto& [_, circleBuffer] : outlineCircleBuffers_) {
-        release(circleBuffer.vertexBuffer);
-        release(circleBuffer.indexBuffer);
+        gpu::release(circleBuffer.vertexBuffer);
+        gpu::release(circleBuffer.indexBuffer);
     }
 
     if (quadVertexBuffer_)
-        release(quadVertexBuffer_);
+        gpu::release(quadVertexBuffer_);
 
     SDL_ReleaseWindowFromGPUDevice(device_, window_);
     SDL_DestroyGPUDevice(device_);
@@ -50,7 +45,7 @@ bool SDLGPUGraphics::beginDraw()
 {
     assert(commandBuffer_ == nullptr);
 
-    commandBuffer_ = SDL_AcquireGPUCommandBuffer(device_);
+    commandBuffer_ = gpu::acquireCommandBuffer();
 
     u32 w, h;
 
@@ -80,7 +75,7 @@ void SDLGPUGraphics::finishDraw()
     assert(renderPass_ != nullptr);
 
     SDL_EndGPURenderPass(renderPass_);
-    SDL_SubmitGPUCommandBuffer(commandBuffer_);
+    gpu::submit(commandBuffer_);
     commandBuffer_ = nullptr;
     renderPass_ = nullptr;
 }
@@ -100,8 +95,7 @@ InternalTexture SDLGPUGraphics::textureCreate(
     u32 height,
     TextureFormat format,
     void* data
-)
-{
+) {
     SDL_GPUTextureFormat sdlFormat = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
 
     SDL_GPUTextureCreateInfo textureInfo{};
@@ -117,13 +111,13 @@ InternalTexture SDLGPUGraphics::textureCreate(
     if (!texture)
         return nullptr;
 
-    auto uploadBuffer = createGPUUploadBuffer(width * height * 4, data);   
+    auto uploadBuffer = gpu::createGPUUploadBuffer(width * height * 4, data);   
     if (!uploadBuffer) {
-        release(texture);
+        gpu::release(texture);
         return nullptr;
     }
 
-    SDL_GPUCommandBuffer* uploadCmd = SDL_AcquireGPUCommandBuffer(device_);
+    SDL_GPUCommandBuffer* uploadCmd = gpu::acquireCommandBuffer();
     SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(uploadCmd);
 
     SDL_GPUTextureTransferInfo texTransferInfo{};
@@ -138,9 +132,9 @@ InternalTexture SDLGPUGraphics::textureCreate(
     SDL_UploadToGPUTexture(copyPass, &texTransferInfo, &texRegion, false);
 
     SDL_EndGPUCopyPass(copyPass);
-    SDL_SubmitGPUCommandBuffer(uploadCmd);
+    gpu::submit(uploadCmd);
 
-    release(uploadBuffer);
+    gpu::release(uploadBuffer);
 
     numTexturesAllocated_++;
     return (InternalTexture)new TextureContainer { texture, width, height };
@@ -198,20 +192,20 @@ void SDLGPUGraphics::spriteBatchResize(InternalSpriteBatch raw, u32 capacity) {
     if (capacity <= batch->capacity)
         return;
 
-    auto newVertexBuffer = createGPUBuffer(sizeof(SpriteQuadVertexSet) * capacity, SDL_GPU_BUFFERUSAGE_VERTEX);
-    auto newIndexBuffer  = createGPUBuffer(sizeof(SpriteQuadIndexSet) * capacity,  SDL_GPU_BUFFERUSAGE_INDEX);
+    auto newVertexBuffer = gpu::createGPUBuffer(sizeof(SpriteQuadVertexSet) * capacity, SDL_GPU_BUFFERUSAGE_VERTEX);
+    auto newIndexBuffer  = gpu::createGPUBuffer(sizeof(SpriteQuadIndexSet) * capacity,  SDL_GPU_BUFFERUSAGE_INDEX);
 
     if (batch->capacity > 0) {
-        auto cbuf = acquireCommandBuffer();
+        auto cbuf = gpu::acquireCommandBuffer();
 
-        copyBuffer(
+        gpu::copyBuffer(
             cbuf,
             batch->vertexBuffer,
             newVertexBuffer,
             sizeof(SpriteQuadVertexSet) * batch->capacity,
             0, 0
         );
-        copyBuffer(
+        gpu::copyBuffer(
             cbuf,
             batch->indexBuffer,
             newIndexBuffer,
@@ -219,17 +213,19 @@ void SDLGPUGraphics::spriteBatchResize(InternalSpriteBatch raw, u32 capacity) {
             0, 0
         );
 
-        submit(cbuf);
+        gpu::submit(cbuf);
 
-        unmapBuffer(batch->vertexUploadBuffer);
-        release(batch->vertexUploadBuffer);
-        release(batch->vertexBuffer);
-        release(batch->indexBuffer);
+        gpu::unmapBuffer(batch->vertexUploadBuffer);
+        gpu::release(batch->vertexUploadBuffer);
+        gpu::release(batch->vertexBuffer);
+        gpu::release(batch->indexBuffer);
     }
 
     u32 newIndiciesSize = (capacity - batch->capacity) * sizeof(SpriteQuadIndexSet);
-    auto indexUploadBuffer = createGPUUploadBuffer(newIndiciesSize);
-    auto indicies = (SpriteQuadIndexSet*)mapBuffer(indexUploadBuffer);
+    auto indexUploadBuffer = gpu::createGPUUploadBuffer(newIndiciesSize);
+    auto indicies = (SpriteQuadIndexSet*)gpu::mapBuffer(indexUploadBuffer);
+
+    // TODO: FIX CONTENTS OF UPLOAD BUFFER NOT BEING COPIED!!!!
 
     auto indexPtr = indicies;
     for (u32 i = batch->capacity; i < capacity; i++) {
@@ -243,12 +239,12 @@ void SDLGPUGraphics::spriteBatchResize(InternalSpriteBatch raw, u32 capacity) {
         indexPtr++;
     }
 
-    unmapBuffer(indexUploadBuffer);
-    uploadBufferData(NULL, indexUploadBuffer, newIndexBuffer, newIndiciesSize, 0, batch->capacity * sizeof(SpriteQuadIndexSet));
-    release(indexUploadBuffer);
+    gpu::unmapBuffer(indexUploadBuffer);
+    gpu::uploadBufferData(NULL, indexUploadBuffer, newIndexBuffer, newIndiciesSize, 0, batch->capacity * sizeof(SpriteQuadIndexSet));
+    gpu::release(indexUploadBuffer);
 
-    batch->vertexUploadBuffer = createGPUUploadBuffer(sizeof(SpriteQuadVertexSet) * capacity);
-    batch->vertexBufferMapped = (SpriteQuadVertexSet*)mapBuffer(batch->vertexUploadBuffer);
+    batch->vertexUploadBuffer = gpu::createGPUUploadBuffer(sizeof(SpriteQuadVertexSet) * capacity);
+    batch->vertexBufferMapped = (SpriteQuadVertexSet*)gpu::mapBuffer(batch->vertexUploadBuffer);
     batch->vertexBuffer = newVertexBuffer;
     batch->indexBuffer = newIndexBuffer;
     batch->capacity = capacity;
@@ -297,10 +293,10 @@ void SDLGPUGraphics::spriteBatchDestroy(InternalSpriteBatch raw) {
     if (batch->capacity == 0)
         return;
 
-    unmapBuffer(batch->vertexUploadBuffer);
-    release(batch->vertexUploadBuffer);
-    release(batch->vertexBuffer);
-    release(batch->indexBuffer);
+    gpu::unmapBuffer(batch->vertexUploadBuffer);
+    gpu::release(batch->vertexUploadBuffer);
+    gpu::release(batch->vertexBuffer);
+    gpu::release(batch->indexBuffer);
 }
 
 struct MeshContainer {
@@ -322,18 +318,18 @@ void SDLGPUGraphics::meshResize(InternalMesh rawMesh, u32 vertexCapacity) {
     u32 oldBufferSize = mesh->vertexCapacity * sizeof(MeshVertex);
     u32 newBufferSize = vertexCapacity * sizeof(MeshVertex);
 
-    auto newVertexBuffer = createGPUBuffer(newBufferSize, SDL_GPU_BUFFERUSAGE_VERTEX);
-    auto newUploadBuffer = createGPUUploadBuffer(newBufferSize);
+    auto newVertexBuffer = gpu::createGPUBuffer(newBufferSize, SDL_GPU_BUFFERUSAGE_VERTEX);
+    auto newUploadBuffer = gpu::createGPUUploadBuffer(newBufferSize);
 
-    auto mappedData = mapBuffer(newUploadBuffer);
+    auto mappedData = gpu::mapBuffer(newUploadBuffer);
 
     if (mesh->vertexBuffer) {
-        copyBuffer(nullptr, mesh->vertexBuffer, newVertexBuffer, oldBufferSize);
+        gpu::copyBuffer(nullptr, mesh->vertexBuffer, newVertexBuffer, oldBufferSize);
         memcpy(mappedData, mesh->mappedData, oldBufferSize);
 
-        unmapBuffer(mesh->uploadBuffer);
-        release(mesh->uploadBuffer);
-        release(mesh->vertexBuffer);
+        gpu::unmapBuffer(mesh->uploadBuffer);
+        gpu::release(mesh->uploadBuffer);
+        gpu::release(mesh->vertexBuffer);
     }
 
     mesh->vertexBuffer = newVertexBuffer;
@@ -353,15 +349,15 @@ void SDLGPUGraphics::meshFlushBufferRange(InternalMesh rawMesh, u32 firstVertex,
     vertexCount = std::min(vertexCount, mesh->vertexCapacity - firstVertex);
     u32 offset = firstVertex * sizeof(MeshVertex);
 
-    uploadBufferData(nullptr, mesh->uploadBuffer, mesh->vertexBuffer, vertexCount * sizeof(MeshVertex), offset, offset);
+    gpu::uploadBufferData(nullptr, mesh->uploadBuffer, mesh->vertexBuffer, vertexCount * sizeof(MeshVertex), offset, offset);
 };
 
 void SDLGPUGraphics::meshDestroy(InternalMesh rawMesh) {
     auto mesh = (MeshContainer*)rawMesh;
     if (mesh->vertexBuffer) {
-        unmapBuffer(mesh->uploadBuffer);
-        release(mesh->uploadBuffer);
-        release(mesh->vertexBuffer);
+        gpu::unmapBuffer(mesh->uploadBuffer);
+        gpu::release(mesh->uploadBuffer);
+        gpu::release(mesh->vertexBuffer);
     }
     delete mesh;
 };
@@ -403,7 +399,7 @@ void SDLGPUGraphics::drawMesh(
         SDL_GPUTextureSamplerBinding textureBinding{};
         textureBinding.texture = texture->texture;
         // TODO: Customize wrap params
-        textureBinding.sampler = fetchSampler(spriteBatchWrapParams);
+        textureBinding.sampler = gpu::fetchSampler(spriteBatchWrapParams);
 
         if (!textureBinding.sampler)
             return;
@@ -433,10 +429,10 @@ void SDLGPUGraphics::drawSpriteBatch(
         return;
 
     if (batch->dirtyType == SpriteBatchDirtyType::Set) {
-        auto cbuf = acquireCommandBuffer();
+        auto cbuf = gpu::acquireCommandBuffer();
 
         for (u32 index : batch->dirtySpriteSet) {
-            uploadBufferData(
+            gpu::uploadBufferData(
                 cbuf,
                 batch->vertexUploadBuffer,
                 batch->vertexBuffer,
@@ -445,9 +441,9 @@ void SDLGPUGraphics::drawSpriteBatch(
             );
         }
 
-        submit(cbuf);
+        gpu::submit(cbuf);
     } else if (batch->dirtyType == SpriteBatchDirtyType::Range) {
-        uploadBufferData(
+        gpu::uploadBufferData(
             nullptr,
             batch->vertexUploadBuffer,
             batch->vertexBuffer,
@@ -467,7 +463,7 @@ void SDLGPUGraphics::drawSpriteBatch(
 
     SDL_GPUTextureSamplerBinding textureBinding{};
     textureBinding.texture = texture->texture;
-    textureBinding.sampler = fetchSampler(spriteBatchWrapParams);
+    textureBinding.sampler = gpu::fetchSampler(spriteBatchWrapParams);
 
     if (!textureBinding.sampler)
         return;
@@ -491,7 +487,7 @@ void SDLGPUGraphics::drawFilledCircle(const glm::mat4 &positionTransform, const 
 
     if (!circleBuffers_.contains(segments)) {
         auto points = computeCirclePoints(segments);
-        buffer = createStaticGPUBuffer(points.size() * sizeof(Point), SDL_GPU_BUFFERUSAGE_VERTEX, (void*)points.data());
+        buffer = gpu::createStaticGPUBuffer(points.size() * sizeof(Point), SDL_GPU_BUFFERUSAGE_VERTEX, (void*)points.data());
 
         circleBuffers_[segments] = buffer; // Cache it once created
     }
@@ -515,13 +511,13 @@ void SDLGPUGraphics::drawFilledCircle(const glm::mat4 &positionTransform, const 
 OutlineMeshBuffers SDLGPUGraphics::createOutlineCircleBuffers(u32 segments) {
     OutlineMesh mesh = computeOutlineCirclePoints(segments);
 
-    SDL_GPUBuffer* vertexBuffer = createStaticGPUBuffer(
+    SDL_GPUBuffer* vertexBuffer = gpu::createStaticGPUBuffer(
         mesh.vertices.size() * sizeof(OutlineVertex),
         SDL_GPU_BUFFERUSAGE_VERTEX,
         mesh.vertices.data()
     );
 
-    SDL_GPUBuffer* indexBuffer = createStaticGPUBuffer(
+    SDL_GPUBuffer* indexBuffer = gpu::createStaticGPUBuffer(
         mesh.indices.size() * sizeof(u32),
         SDL_GPU_BUFFERUSAGE_INDEX,
         mesh.indices.data()
@@ -597,7 +593,7 @@ void SDLGPUGraphics::drawSprite(
 
     SDL_GPUTextureSamplerBinding textureBinding{};
     textureBinding.texture = texture->texture;
-    textureBinding.sampler = fetchSampler(wrapParams);
+    textureBinding.sampler = gpu::fetchSampler(wrapParams);
 
     if (!textureBinding.sampler)
         return;
@@ -607,8 +603,7 @@ void SDLGPUGraphics::drawSprite(
     SDL_DrawGPUPrimitives(renderPass_, 4, 1, 0, 0);
 }
 
-SDLGPUGraphics* SDLGPUGraphics::create(SDL_Window* window, GraphicsLibrary lib)
-{
+SDLGPUGraphics* SDLGPUGraphics::create(SDL_Window* window, GraphicsLibrary lib) {
     SDL_GPUShaderFormat format;
     const char* api;
     switch (lib) {
@@ -629,15 +624,13 @@ SDLGPUGraphics* SDLGPUGraphics::create(SDL_Window* window, GraphicsLibrary lib)
     }
 
     SDL_GPUDevice* device = SDL_CreateGPUDevice(format, true, api);
-    if (!device)
-    {
+    if (!device) {
         log::err("Failed to create SDL_GPUDevice: {}", SDL_GetError());
         SDL_DestroyGPUDevice(device);
         return nullptr;
     }
 
-    if (!SDL_ClaimWindowForGPUDevice(device, window))
-    {
+    if (!SDL_ClaimWindowForGPUDevice(device, window)) {
         log::err("Failed to claim window for gpu device: {}", SDL_GetError());
         SDL_DestroyGPUDevice(device);
         return nullptr;
@@ -646,7 +639,6 @@ SDLGPUGraphics* SDLGPUGraphics::create(SDL_Window* window, GraphicsLibrary lib)
     auto graphics = new SDLGPUGraphics;
 
     graphics->graphicsLibrary_ = lib;
-    graphics->shaderFormat_ = format;
     graphics->window_ = window;
     graphics->device_ = device;
 
@@ -658,372 +650,110 @@ SDLGPUGraphics* SDLGPUGraphics::create(SDL_Window* window, GraphicsLibrary lib)
     return graphics;
 }
 
-bool SDLGPUGraphics::init()
-{
+bool SDLGPUGraphics::init() {
+    gpu::init(window_, device_, graphicsLibrary_);
+
     if (!setupPipelines()) {
         log::err("failed to setup graphics pipelines");
         return false;
     }
 
-    quadVertexBuffer_ = createStaticGPUBuffer(sizeof(quadVerticies), SDL_GPU_BUFFERUSAGE_VERTEX, (void*)quadVerticies);
+    quadVertexBuffer_ = gpu::createStaticGPUBuffer(sizeof(quadVerticies), SDL_GPU_BUFFERUSAGE_VERTEX, (void*)quadVerticies);
     if (!quadVertexBuffer_) {
         log::err("failed to create vertex buffer");
         return false;
     }
 
     // Disable v-sync
-    if (SDL_WindowSupportsGPUPresentMode(device_, window_, SDL_GPU_PRESENTMODE_MAILBOX)) {
+    if (SDL_WindowSupportsGPUPresentMode(device_, window_, SDL_GPU_PRESENTMODE_MAILBOX))
         SDL_SetGPUSwapchainParameters(device_, window_, SDL_GPU_SWAPCHAINCOMPOSITION_SDR, SDL_GPU_PRESENTMODE_MAILBOX);
-    }
 
     return true;
 }
 
-SDL_GPUShader* SDLGPUGraphics::loadShader(const std::string& path, SDL_GPUShaderStage stage, u32 numSamplers, u32 numUniformBuffers)
-{
-    std::string rawPath;
-    switch (graphicsLibrary_) {
-        case GraphicsLibrary::Vulkan: rawPath = "shaders/spv/" + path + ".spv"; break;
-        case GraphicsLibrary::Direct3D12: rawPath = "shaders/dxil/" + path + ".dxil"; break;
-        case GraphicsLibrary::Metal: rawPath = "shaders/msl/" + path + ".msl"; break;
-        default:
-            assert(false && "invalid graphics library");
-            return nullptr;
-    }
+bool SDLGPUGraphics::setupPipelines() {
+    SDL_GPUShader* batchVertexShader           = gpu::loadShader("spriteBatch.vert",   SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
+    SDL_GPUShader* spriteVertexShader          = gpu::loadShader("sprite.vert",        SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
+    SDL_GPUShader* spriteFragmentShader        = gpu::loadShader("sprite.frag",        SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0);
+    SDL_GPUShader* solidMeshVertexShader       = gpu::loadShader("solidMesh.vert",     SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
+    SDL_GPUShader* solidMeshFragmentShader     = gpu::loadShader("solidMesh.frag",     SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0);
+    SDL_GPUShader* circleVertexShader          = gpu::loadShader("circle.vert",        SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
+    SDL_GPUShader* textureMeshVertexShader     = gpu::loadShader("textureMesh.vert",   SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
+    SDL_GPUShader* textureMeshFragmentShader   = gpu::loadShader("textureMesh.frag",   SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0);
+    SDL_GPUShader* outlineCircleVertexShader   = gpu::loadShader("outlineCircle.vert", SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
+    SDL_GPUShader* outlineCircleFragmentShader = gpu::loadShader("outlineCircle.frag", SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 2);
 
-    std::vector<u8> code;
-
-    if (!AssetManager::get()->readFileAsBinaryData(rawPath, code)) {
-        log::err("Failed to load shader {}", path);
-        allShadersSucceeded = false;
-        return nullptr;
-    }
-
-    SDL_GPUShaderCreateInfo info{};
-    info.code = code.data();
-    info.code_size = code.size();
-    info.entrypoint = graphicsLibrary_ == GraphicsLibrary::Metal ? "main0" : "main";
-    info.format = shaderFormat_;
-    info.stage = stage;
-    info.num_samplers = numSamplers;
-    info.num_uniform_buffers = numUniformBuffers;
-
-    SDL_GPUShader* shader = SDL_CreateGPUShader(device_, &info);
-    if (!shader) {
-        log::err("Failed to compile shader {}:\n{}", path, SDL_GetError());
-        allShadersSucceeded = false;
-        return nullptr;
-    }
-
-    shaders_.push_back(shader);
-    return shader;
-}
-
-static u32 getVertexFormatType(SDL_GPUVertexElementFormat format) {
-    switch (format) {
-        case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT:  return sizeof(float) * 1;
-        case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2: return sizeof(float) * 2;
-        case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3: return sizeof(float) * 3;
-        case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4: return sizeof(float) * 4;
-        case SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4_NORM: return sizeof(u8) * 4;
-        default:
-            assert(false && "vertex format unknown");
-    }
-    return 0;
-}
-
-SDL_GPUGraphicsPipeline* SDLGPUGraphics::createGraphicsPipeline(
-    SDL_GPUPrimitiveType primitive,
-    const std::vector<VertexAttribute>& attributes,
-    SDL_GPUShader* vertexShader,
-    SDL_GPUShader* fragmentShader,
-    BlendMode blendMode
-) {
-    u32 pitch = 0;
-    for (const auto& attrib : attributes)
-        pitch += getVertexFormatType(attrib.type);
-
-    SDL_GPUVertexBufferDescription vertexBufferDesc{};
-    vertexBufferDesc.slot = 0;
-    vertexBufferDesc.input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX;
-    vertexBufferDesc.pitch = pitch;
-
-    u32 offset = 0;
-
-    std::vector<SDL_GPUVertexAttribute> rawAttributes;
-    for (const auto& attrib : attributes) {
-        rawAttributes.push_back({});
-        auto& raw = rawAttributes.back();
-        raw.buffer_slot = 0;
-        raw.location = attrib.location;
-        raw.format = attrib.type;
-        raw.offset = offset;
-
-        offset += getVertexFormatType(raw.format);
-    }
-
-    bool additiveBlending = blendMode == BlendMode::Additive;
-    bool multiplicativeBlending = blendMode == BlendMode::Multiplicative;
-
-    SDL_GPUColorTargetDescription colorTarget{};
-    colorTarget.format = SDL_GetGPUSwapchainTextureFormat(device_, window_);
-    colorTarget.blend_state.enable_blend = true;
-    colorTarget.blend_state.color_blend_op = SDL_GPU_BLENDOP_ADD;
-    colorTarget.blend_state.alpha_blend_op = SDL_GPU_BLENDOP_ADD;
-    colorTarget.blend_state.src_color_blendfactor = multiplicativeBlending ? SDL_GPU_BLENDFACTOR_DST_COLOR : SDL_GPU_BLENDFACTOR_SRC_ALPHA;
-    colorTarget.blend_state.dst_color_blendfactor = multiplicativeBlending ? SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA :
-                                                    additiveBlending ? SDL_GPU_BLENDFACTOR_ONE : SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-    colorTarget.blend_state.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
-    colorTarget.blend_state.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-    SDL_GPUGraphicsPipelineCreateInfo pipelineInfo{};
-    pipelineInfo.vertex_shader = vertexShader;
-    pipelineInfo.fragment_shader = fragmentShader;
-    pipelineInfo.primitive_type = primitive;
-    pipelineInfo.vertex_input_state.num_vertex_buffers = 1;
-    pipelineInfo.vertex_input_state.vertex_buffer_descriptions = &vertexBufferDesc;
-    pipelineInfo.vertex_input_state.num_vertex_attributes = rawAttributes.size();
-    pipelineInfo.vertex_input_state.vertex_attributes = rawAttributes.data();
-    pipelineInfo.target_info.num_color_targets = 1;
-    pipelineInfo.target_info.color_target_descriptions = &colorTarget;
-
-    SDL_GPUGraphicsPipeline* pipeline = SDL_CreateGPUGraphicsPipeline(device_, &pipelineInfo);
-    if (!pipeline) {
-        log::err("failed to create graphics pipeline: {}", SDL_GetError());
-        allPipelinesSucceeded = false;
-    } else
-        graphicsPipelines_.push_back(pipeline);
-    return pipeline;
-}
-
-PipelineBlendPair SDLGPUGraphics::createPipelineBlendPair(
-    SDL_GPUPrimitiveType primitive,
-    const std::vector<VertexAttribute>& attributes,
-    SDL_GPUShader* vertexShader,
-    SDL_GPUShader* fragmentShader,
-    bool includeMultiplicative
-) {
-    PipelineBlendPair pair = {
-        .normal   = createGraphicsPipeline(primitive, attributes, vertexShader, fragmentShader, BlendMode::Normal),
-        .additive = createGraphicsPipeline(primitive, attributes, vertexShader, fragmentShader, BlendMode::Additive)
-    };
-
-    if (includeMultiplicative)
-        pair.multiplicative = createGraphicsPipeline(primitive, attributes, vertexShader, fragmentShader, BlendMode::Multiplicative);
-    return pair;
-}
-
-bool SDLGPUGraphics::setupPipelines()
-{
-    SDL_GPUShader* batchVertexShader           = loadShader("spriteBatch.vert",   SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
-    SDL_GPUShader* spriteVertexShader          = loadShader("sprite.vert",        SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
-    SDL_GPUShader* spriteFragmentShader        = loadShader("sprite.frag",        SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0);
-    SDL_GPUShader* solidMeshVertexShader       = loadShader("solidMesh.vert",     SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
-    SDL_GPUShader* solidMeshFragmentShader     = loadShader("solidMesh.frag",     SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0);
-    SDL_GPUShader* circleVertexShader          = loadShader("circle.vert",        SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
-    SDL_GPUShader* textureMeshVertexShader     = loadShader("textureMesh.vert",   SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
-    SDL_GPUShader* textureMeshFragmentShader   = loadShader("textureMesh.frag",   SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0);
-    SDL_GPUShader* outlineCircleVertexShader   = loadShader("outlineCircle.vert", SDL_GPU_SHADERSTAGE_VERTEX,   0, 2);
-    SDL_GPUShader* outlineCircleFragmentShader = loadShader("outlineCircle.frag", SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 2);
-
-    if (!allShadersSucceeded) {
-        releaseAllShaders();
+    if (gpu::hasFailedLoadingShaders()) {
+        gpu::releaseAllShaders();
         return false;
     }
 
-    defaultSpritePipeline_ = createPipelineBlendPair(
-        SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP,
-        {
-            {0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2}
+    defaultSpritePipeline_ = gpu::createPipelines({
+        .primitive = Primitive::TriangleStrip,
+        .attributes = {
+            {0, VertexFormat::Float2}
         },
-        spriteVertexShader,
-        spriteFragmentShader,
-        true
-    );
+        .vertexShader = spriteVertexShader,
+        .fragmentShader = spriteFragmentShader,
+        .includeMultiplicative = true
+    });
 
-    spriteBatchPipeline_ = createPipelineBlendPair(
-        SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
-        {
-            {0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2},
-            {1, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2},
-            {2, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4},
+    spriteBatchPipeline_ = gpu::createPipelines({
+        .primitive = Primitive::TriangleList,
+        .attributes = {
+            {0, VertexFormat::Float2},
+            {1, VertexFormat::Float2},
+            {2, VertexFormat::Float4},
         },
-        batchVertexShader,
-        spriteFragmentShader
-    );
+        .vertexShader = batchVertexShader,
+        .fragmentShader = spriteFragmentShader
+    });
 
-    circlePipeline_ = createPipelineBlendPair(
-        SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP,
-        {
-            {0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2}
+    circlePipeline_ = gpu::createPipelines({
+        .primitive = Primitive::TriangleStrip,
+        .attributes = {
+            {0, VertexFormat::Float2}
         },
-        circleVertexShader,
-        solidMeshFragmentShader
-    );
+        .vertexShader = circleVertexShader,
+        .fragmentShader = solidMeshFragmentShader
+    });
 
-    outlineCirclePipeline_ = createPipelineBlendPair(
-        SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
-        {
-            { 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2 }, // a_segStart
-            { 1, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2 }, // a_segEnd
-            { 2, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT  }, // a_side
-            { 3, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT  }, // a_endpoint
+    outlineCirclePipeline_ = gpu::createPipelines({
+        .primitive = Primitive::TriangleList,
+        .attributes = {
+            { 0, VertexFormat::Float2 }, // a_segStart
+            { 1, VertexFormat::Float2 }, // a_segEnd
+            { 2, VertexFormat::Float  }, // a_side
+            { 3, VertexFormat::Float  }, // a_endpoint
         },
-        outlineCircleVertexShader,
-        outlineCircleFragmentShader
-    );
+        .vertexShader = outlineCircleVertexShader,
+        .fragmentShader = outlineCircleFragmentShader
+    });
 
-    solidMeshPipeline_ = createPipelineBlendPair(
-        SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
-        {
-            {0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2},
-            {1, SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4_NORM},
-            {2, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2}
+    solidMeshPipeline_ = gpu::createPipelines({
+        .primitive = Primitive::TriangleList,
+        .attributes = {
+            {0, VertexFormat::Float2},
+            {1, VertexFormat::UByte4_Norm},
+            {2, VertexFormat::Float2}
         },
-        solidMeshVertexShader,
-        solidMeshFragmentShader
-    );
+        .vertexShader = solidMeshVertexShader,
+        .fragmentShader = solidMeshFragmentShader
+    });
 
-    textureMeshPipeline_ = createPipelineBlendPair(
-        SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
-        {
-            {0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2},
-            {1, SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4_NORM},
-            {2, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2}
+    textureMeshPipeline_ = gpu::createPipelines({
+        .primitive = Primitive::TriangleList,
+        .attributes = {
+            {0, VertexFormat::Float2},
+            {1, VertexFormat::UByte4_Norm},
+            {2, VertexFormat::Float2}
         },
-        textureMeshVertexShader,
-        textureMeshFragmentShader
-    );
+        .vertexShader = textureMeshVertexShader,
+        .fragmentShader = textureMeshFragmentShader
+    });
 
-    releaseAllShaders();
-    return allPipelinesSucceeded;
-}
-
-SDL_GPUBuffer* SDLGPUGraphics::createGPUBuffer(u32 size, SDL_GPUBufferUsageFlags usage) {
-    SDL_GPUBufferCreateInfo info{};
-    info.size = size;
-    info.usage = usage;
-    return SDL_CreateGPUBuffer(device_, &info);
-}
-
-SDL_GPUTransferBuffer* SDLGPUGraphics::createGPUUploadBuffer(u32 size, void* data) {
-    SDL_GPUTransferBufferCreateInfo info{};
-    info.size = size;
-    info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-    SDL_GPUTransferBuffer* buffer = SDL_CreateGPUTransferBuffer(device_, &info);
-    if (!buffer)
-        return nullptr;
-
-    if (data) {
-        memcpy(SDL_MapGPUTransferBuffer(device_, buffer, false), data, size);
-        SDL_UnmapGPUTransferBuffer(device_, buffer);
-    }
-
-    return buffer;
-}
-
-void SDLGPUGraphics::uploadBufferData(
-    SDL_GPUCommandBuffer* cbuffer,
-    SDL_GPUTransferBuffer* src,
-    SDL_GPUBuffer* dst,
-    u32 size,
-    u32 srcOffset,
-    u32 dstOffset
-) {
-    bool ownCBuffer = cbuffer == nullptr;
-    if (ownCBuffer)
-        cbuffer = acquireCommandBuffer();
-
-    SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(cbuffer);
-
-    SDL_GPUTransferBufferLocation location{};
-    location.transfer_buffer = src;
-    location.offset = srcOffset;
-    SDL_GPUBufferRegion region{};
-    region.buffer = dst;
-    region.size = size;
-    region.offset = dstOffset;
-    SDL_UploadToGPUBuffer(copyPass, &location, &region, false);
-    SDL_EndGPUCopyPass(copyPass);
-
-    if (ownCBuffer)
-        submit(cbuffer);
-}
-
-void SDLGPUGraphics::copyBuffer(
-    SDL_GPUCommandBuffer* cbuffer,
-    SDL_GPUBuffer* src,
-    SDL_GPUBuffer* dst,
-    u32 size,
-    u32 srcOffset,
-    u32 dstOffset
-) {
-    bool ownCBuffer = cbuffer == nullptr;
-    if (ownCBuffer)
-        cbuffer = acquireCommandBuffer();
-
-    SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(cbuffer);
-    SDL_GPUBufferLocation srcLocation{};
-    srcLocation.buffer = src;
-    srcLocation.offset = srcOffset;
-    SDL_GPUBufferLocation dstLocation{};
-    dstLocation.buffer = dst;
-    dstLocation.offset = dstOffset;
-    SDL_CopyGPUBufferToBuffer(copyPass, &srcLocation, &dstLocation, size, false);
-    SDL_EndGPUCopyPass(copyPass);
-
-    if (ownCBuffer)
-        submit(cbuffer);
-}
-
-SDL_GPUBuffer* SDLGPUGraphics::createStaticGPUBuffer(u32 size, SDL_GPUBufferUsageFlags usage, void* data) {
-    SDL_GPUBuffer* buffer = createGPUBuffer(size, usage);
-    if (!buffer)
-        return nullptr;
-
-    SDL_GPUTransferBuffer* uploadBuffer = createGPUUploadBuffer(size, data);
-    if (!uploadBuffer) {
-        SDL_ReleaseGPUBuffer(device_, buffer);
-        return nullptr;
-    }
-
-    uploadBufferData(NULL, uploadBuffer, buffer, size);
-    release(uploadBuffer);
-    return buffer;
-}
-
-static inline SDL_GPUSamplerAddressMode toSDLAddressMode(WrapMode mode) {
-    switch (mode) {
-        case WrapMode::Clamp: return SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
-        case WrapMode::Repeat: return SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
-        case WrapMode::MirroredRepeat: return SDL_GPU_SAMPLERADDRESSMODE_MIRRORED_REPEAT;
-        default:
-            assert(false && "invalid WrapMode");
-    }
-    return SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
-}
-
-SDL_GPUSampler* SDLGPUGraphics::fetchSampler(const TextureWrapParameters& params) {
-    u32 code = params.asBitCode();
-    auto it = samplers_.find(code);
-    if (it != samplers_.end())
-        return it->second;
-
-    SDL_GPUSamplerCreateInfo samplerInfo{};
-    samplerInfo.min_filter = SDL_GPU_FILTER_LINEAR;
-    samplerInfo.mag_filter = SDL_GPU_FILTER_LINEAR;
-    samplerInfo.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
-    samplerInfo.address_mode_u = toSDLAddressMode(params.u);
-    samplerInfo.address_mode_v = toSDLAddressMode(params.v);
-
-    SDL_GPUSampler* sampler = SDL_CreateGPUSampler(device_, &samplerInfo);
-    if (!sampler) {
-        SDL_Log("Could not create sampler: %s", SDL_GetError());
-        return nullptr;
-    }
-
-    samplers_[code] = sampler;
-    return sampler;
+    gpu::releaseAllShaders();
+    return !gpu::hasFailedLoadingPipelines();
 }
 
 };

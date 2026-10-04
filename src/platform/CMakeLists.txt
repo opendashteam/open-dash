@@ -21,6 +21,7 @@ if(
         "${CMAKE_CURRENT_SOURCE_DIR}/sdl/main.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/sdl/Window.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/sdl/SDLGPUGraphics.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/sdl/gpu.cpp"
     )
 
     set(OPENDASH_PLATFORM_LIBRARIES
