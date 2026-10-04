@@ -9,6 +9,7 @@ namespace opendash::engine
 class TilingSprite : public ColorNode {
 public:
     static std::unique_ptr<TilingSprite> create(const std::filesystem::path& path);
+    static std::unique_ptr<TilingSprite> createEmpty();
 
     // setters
     void setTileOffset(const Point& tileOffset);
@@ -36,6 +37,7 @@ public:
 
 protected:
     bool initWithPath(const std::filesystem::path& path);
+    bool initEmpty();
     void draw(Graphics* gfx) override;
     bool init() override;
 
@@ -54,7 +56,7 @@ private:
     bool spriteSizeTransformDirty_ = true;
     glm::mat4 spriteSizeTransform_;
 
-    // cache this
+    // cache
     TextureWrapParameters wrapParameters_ = { WrapMode::Repeat, WrapMode::Repeat };
 };
 

@@ -90,19 +90,25 @@ void Node::removeChild(Node* child) {
 Node::~Node() {}
 
 void Node::update(float dt) {
-    // override me
+    // Override me
 }
 
 void Node::draw(Graphics* gfx) {
-    // override me
+    // Override me
 }
 
 void Node::visit(Graphics* gfx) {
+    // TODO
     // TEMPORARY: Until we have an update scheduler
     if (shouldScheduleUpdate_)
         update(Director::get()->getDeltaTime());
 
     if (!isVisible_) return;
+
+    Director::get()->setUseCameraIndependentProjection(
+        gfx,
+        effectiveIgnoreCameraPosition_
+    );
 
     this->draw(gfx); // draw self
     
@@ -347,6 +353,29 @@ void Node::setIgnoreLayout(bool ignore)
     markLayoutDirty();
 }
 
+void Node::updateEffectiveIgnoreCameraPosition(bool inheritedIgnore) {
+    const bool effective =
+        inheritedIgnore || ignoreCameraPosition_;
+
+    if (effectiveIgnoreCameraPosition_ == effective)
+        return;
+
+    effectiveIgnoreCameraPosition_ = effective;
+
+    // Propagate to children, they must also be in screen space
+    for (auto& child : children_) {
+        child->updateEffectiveIgnoreCameraPosition(effective);
+    }
+}
+
+void Node::setIgnoreCameraPosition(bool ignoreCameraPosition) {
+    if (ignoreCameraPosition_ == ignoreCameraPosition)
+        return;
+
+    ignoreCameraPosition_ = ignoreCameraPosition;
+    updateEffectiveIgnoreCameraPosition(parent_ ? parent_->effectiveIgnoreCameraPosition_ : false);
+}
+
 const Size& Node::getContentSize() const
 {
     return contentSize_;
@@ -397,6 +426,10 @@ bool Node::isIgnoreLayout() const
 
 int Node::getChildCount() const {
     return children_.size();
+}
+
+bool Node::getIgnoreCameraPosition() const {
+    return ignoreCameraPosition_;
 }
 
 glm::mat4 Node::computeLocalTransformMatrix() {

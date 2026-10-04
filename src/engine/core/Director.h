@@ -29,6 +29,20 @@ public:
     void setDesignResolutionSize(const Size& designResolutionSize);
     void setTimeScale(float timeScale);
 
+    // Camera shenanigans
+    void updateCameraViewProjection();
+    void setCameraPosition(const Point& cameraPosition);
+    void setCameraPosition(float x, float y);
+    void setCameraPositionX(float cameraPositionX);
+    void setCameraPositionY(float cameraPositionY);
+    void moveCameraBy(float deltaX, float deltaY);
+    void moveCameraByX(float deltaX);
+    void moveCameraByY(float deltaY);
+    const Point& getCameraPosition() const;
+    float getCameraPositionX() const;
+    float getCameraPositionY() const;
+    void setUseCameraIndependentProjection(Graphics* gfx, bool cameraIndependent);
+
     // getters
     glm::mat4 getProjectionMatrix() const;
     Scene* getRunningScene() const;
@@ -92,13 +106,19 @@ private:
 
     glm::mat4 projectionMatrix_{1.0f};
     glm::mat4 inverseProjectionMatrix_{1.0f};
+    glm::mat4 projectionMatrixCameraIndependent_{1.0f};
+    glm::mat4 inverseProjectionMatrixCameraIndependent_{1.0f};
+
+    bool useIndependantCameraProjection_ = false;
+
     std::unique_ptr<Scene> currentScene_ = nullptr;
 
     bool areLayoutsDirty_ = true;
 
-    Size visibleSize_ = {0.0f, 0.0f};
-    Size frameSize_  = {0.0f, 0.0f};
-    Size designResolutionSize_ = {0.0f, 0.0f};
+    Point cameraPosition_ = PointZero;
+    Size visibleSize_ = PointZero;
+    Size frameSize_  = PointZero;
+    Size designResolutionSize_ = PointZero;
 
     float contentScaleFactor_ = 1.0f;
     float invertedContentScaleFactor_ = 1.0f;

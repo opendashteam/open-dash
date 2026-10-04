@@ -479,7 +479,7 @@ void SDLGPUGraphics::drawSprite(
     const glm::mat3& textureTransform,
     const Color4F& color,
     const TextureWrapParameters& wrapParams,
-    bool blending
+    engine::BlendMode blendMode
 ) {
     assert(commandBuffer_);
 
@@ -488,7 +488,12 @@ void SDLGPUGraphics::drawSprite(
     SpritePropertiesUBO ubo = { positionTransform, textureTransform, Color4F::toVector(color) };
 
     SDL_PushGPUVertexUniformData(commandBuffer_, UNIFORM_SLOT_SPRITE_PROPERTIES, &ubo, sizeof(ubo));
-    SDL_BindGPUGraphicsPipeline(renderPass_, blending ? defaultSpriteBlendingPipeline_ : defaultSpritePipeline_);
+    SDL_BindGPUGraphicsPipeline(
+        renderPass_,
+        blendMode == engine::BlendMode::Additive ? defaultSpriteBlendingPipeline_ :
+        blendMode == engine::BlendMode::Multiplicative ? defaultSpriteMultiplicativePipeline_ :
+        defaultSpritePipeline_
+    );
 
     SDL_GPUBufferBinding vertexBinding{};
     vertexBinding.buffer = quadVertexBuffer_;
@@ -632,7 +637,8 @@ SDL_GPUGraphicsPipeline* SDLGPUGraphics::createGraphicsPipeline(
     const std::vector<VertexAttribute>& attributes,
     SDL_GPUShader* vertexShader,
     SDL_GPUShader* fragmentShader,
-    bool additiveBlending
+    bool additiveBlending,
+    bool multiplicativeBlending // Too lazy to make it an enum
 ) {
     u32 pitch = 0;
     for (const auto& attrib : attributes)
@@ -662,8 +668,9 @@ SDL_GPUGraphicsPipeline* SDLGPUGraphics::createGraphicsPipeline(
     colorTarget.blend_state.enable_blend = true;
     colorTarget.blend_state.color_blend_op = SDL_GPU_BLENDOP_ADD;
     colorTarget.blend_state.alpha_blend_op = SDL_GPU_BLENDOP_ADD;
-    colorTarget.blend_state.src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
-    colorTarget.blend_state.dst_color_blendfactor = additiveBlending ? SDL_GPU_BLENDFACTOR_ONE : SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+    colorTarget.blend_state.src_color_blendfactor = multiplicativeBlending ? SDL_GPU_BLENDFACTOR_DST_COLOR : SDL_GPU_BLENDFACTOR_SRC_ALPHA;
+    colorTarget.blend_state.dst_color_blendfactor = multiplicativeBlending ? SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA :
+                                                    additiveBlending ? SDL_GPU_BLENDFACTOR_ONE : SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
     colorTarget.blend_state.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
     colorTarget.blend_state.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
@@ -726,6 +733,17 @@ bool SDLGPUGraphics::setupPipelines()
         },
         spriteVertexShader,
         fragmentShader,
+        true
+    );
+
+    defaultSpriteMultiplicativePipeline_ = createGraphicsPipeline(
+        SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP,
+        {
+            {0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2}
+        },
+        spriteVertexShader,
+        fragmentShader,
+        false,
         true
     );
 

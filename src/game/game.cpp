@@ -14,6 +14,9 @@ bool game::init() {
     if (!AssetManager::get()->loadSpriteSheet("GJ_GameSheet03-uhd"))
         return false;
 
+    if (!AssetManager::get()->loadSpriteSheet("GJ_GameSheet02-uhd"))
+        return false;
+
     auto scene = ExampleScene::create();
     if (!scene) 
         return false;

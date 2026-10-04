@@ -16,6 +16,20 @@ std::unique_ptr<TilingSprite> TilingSprite::create(const std::filesystem::path &
     return ret;
 }
 
+std::unique_ptr<TilingSprite> TilingSprite::createEmpty() {
+    auto ret = std::make_unique<TilingSprite>();
+
+    if (!ret->initEmpty()) {
+        return nullptr;
+    }
+
+    return ret;    
+}
+
+bool TilingSprite::initEmpty() {
+    return true;
+}
+
 void TilingSprite::setTileOffset(const Point &tileOffset) {
     if (tileOffset == tileOffset_)
         return;
@@ -124,6 +138,8 @@ bool TilingSprite::initWithPath(const std::filesystem::path &path) {
 }
 
 void TilingSprite::draw(Graphics *gfx) {
+    if (!texture_) return;
+    
     Size contentSize = getContentSize();
 
     glm::vec2 uvPos  = tileOffset_.toGLM() / textureWorldSize_.toGLM();
@@ -131,7 +147,7 @@ void TilingSprite::draw(Graphics *gfx) {
 
     glm::mat3 texTransform;
     texTransform[0] = { uvSize.x, 0,        0 };
-    texTransform[1] = { 0,        uvSize.y, 0 };
+    texTransform[1] = { 0,        -uvSize.y, 0 };
     texTransform[2] = { uvPos.x,  uvPos.y,  1 };
 
     if (spriteSizeTransformDirty_) {
@@ -141,7 +157,7 @@ void TilingSprite::draw(Graphics *gfx) {
 
     glm::mat4 posTransform = getWorldTransform() * spriteSizeTransform_;
 
-    gfx->drawSprite(texture_, posTransform, texTransform, renderColor_, wrapParameters_, false);
+    gfx->drawSprite(texture_, posTransform, texTransform, renderColor_, wrapParameters_, BlendMode::Normal);
 }
 
 bool TilingSprite::init() {

@@ -2,6 +2,7 @@
 
 #include "engine.h" // Always prefer this over individual includes in game files (do not use in engine code!)
 #include "SpriteBatchTest.h"
+#include "nodes/Ground.h"
 
 using namespace opendash::engine;
 
@@ -12,12 +13,14 @@ class ExampleScene : public engine::Scene {
 public:
     CREATE_FUNC(ExampleScene)
     void update(float dt) override;
+    void onCameraMoved() override;
 protected:
     virtual bool init() override;
 private:
     Sprite* exampleSprite_ = nullptr;
     TilingSprite* tilingSprite_ = nullptr;
     SpriteBatchTest* batchTest_ = nullptr;
+    Ground* ground_ = nullptr;
     bool spriteMovingRight_ = true;
 };
 

@@ -14,9 +14,8 @@ public:
     static std::unique_ptr<Sprite> createWithFrame(SpriteFrame* spriteFrame);
     static std::unique_ptr<Sprite> createWithFrame(const std::string& spriteFrameName);
 
-    void enableBlending();
-    void disableBlending();
-    bool isBlendingEnabled();
+    void setBlendMode(const BlendMode& blendMode);
+    const BlendMode& getBlendMode() const;
 protected:
     bool initWithPath(const std::filesystem::path& path);
     bool initWithSpriteFrame(SpriteFrame* frame);
@@ -33,7 +32,7 @@ private:
     SpriteFrame* spriteFrame_ = nullptr;
     glm::mat4 internalSpriteTransform_{1.0f}; // unit quad -> size in points
 
-    bool blendingEnabled_ = false;
+    BlendMode blendMode_;
 };
 
 }

@@ -6,6 +6,7 @@ namespace opendash::engine
 void ColorNode::setColor(const Color3B &color) {
     color_ = color;
     renderColor_ = Color4F::fromColor3B(color, renderColor_.a);
+    onRenderColorChanged();
 }
 
 void ColorNode::setColor(u8 r, u8 g, u8 b) {
@@ -16,15 +17,18 @@ void ColorNode::setColor(const Color4F &color) {
     color_ = Color3B::fromColor4F(color);
     renderColor_ = color;
     opacity_ = static_cast<u8>(color.a * 255.0f);
+    onRenderColorChanged();
 }
 
 void ColorNode::setOpacity(u8 opacity) {
     opacity_ = opacity;
     renderColor_.a = opacity / 255.0f;
+    onRenderColorChanged();
 }
 void ColorNode::setOpacityF(float unitOpacity) {
     opacity_ = static_cast<u8>(unitOpacity * 255.0f);
     renderColor_.a = unitOpacity;
+    onRenderColorChanged();
 }
 
 const Color3B &ColorNode::getColor() const {
@@ -37,6 +41,10 @@ u8 ColorNode::getOpacity() const {
 
 const Color4F &ColorNode::getRenderColor() const {
     return renderColor_;
+}
+
+void ColorNode::onRenderColorChanged() {
+    // Override me
 }
 
 }

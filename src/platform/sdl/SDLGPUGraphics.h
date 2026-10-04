@@ -56,7 +56,7 @@ public:
         const glm::mat3& textureTransform,
         const engine::Color4F& color,
         const engine::TextureWrapParameters& wrapParams,
-        bool blending
+        engine::BlendMode blendMode
     );
 
     virtual void drawSpriteBatch(
@@ -101,7 +101,8 @@ private:
         const std::vector<VertexAttribute>& attributes,
         SDL_GPUShader* vertexShader,
         SDL_GPUShader* fragmentShader,
-        bool additiveBlending
+        bool additiveBlending,
+        bool multiplicativeBlending = false
     );
 
     bool setupPipelines();
@@ -176,6 +177,7 @@ private:
     // PIPELINES //
     SDL_GPUGraphicsPipeline* defaultSpritePipeline_ = nullptr;
     SDL_GPUGraphicsPipeline* defaultSpriteBlendingPipeline_ = nullptr;
+    SDL_GPUGraphicsPipeline* defaultSpriteMultiplicativePipeline_ = nullptr;
     SDL_GPUGraphicsPipeline* spriteBatchPipeline_ = nullptr;
     SDL_GPUGraphicsPipeline* spriteBatchBlendingPipeline_ = nullptr;
     SDL_GPUGraphicsPipeline* solidPipeline_ = nullptr;
