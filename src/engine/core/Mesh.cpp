@@ -1,19 +1,27 @@
 #include "Mesh.h"
 #include "Graphics.h"
 
+#define CAPACITY_INCREMENTS 128
+
 namespace opendash::engine {
 
 Mesh::~Mesh() {
     Graphics::get()->meshDestroy(internal_);
 }
 
-void Mesh::resize(u32 vertexCount) {
-    Graphics::get()->meshResize(internal_, vertexCount);
-    vertexCount_ = vertexCount;
+void Mesh::reserve(u32 vertexCount) {
+    if (vertexCount <= capacity_)
+        return;
+    capacity_ = (vertexCount / CAPACITY_INCREMENTS + 1) * CAPACITY_INCREMENTS;
+    Graphics::get()->meshResize(internal_, capacity_);
 }
 
 MeshVertex* Mesh::getBuffer() {
     return Graphics::get()->meshGetBuffer(internal_);
+}
+
+void Mesh::flushRange(u32 index, u32 count) {
+    Graphics::get()->meshFlushBufferRange(internal_, index, count);
 }
 
 void Mesh::drawSolid(

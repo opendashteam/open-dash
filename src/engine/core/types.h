@@ -260,6 +260,21 @@ struct Point {
         return atan2f(y, x);
     }
 
+    // Returns the counter-clockwise perpendicular vector of this vector
+    Point getPerpCCW() const {
+        return { -y, x };
+    }
+
+    // Returns the clockwise perpendicular vector of this vector
+    Point getPerpCW() const {
+        return { y, -x };
+    }
+
+    // Returns the dot product of the two vectors
+    static float dot(const Point& a, const Point& b) {
+        return a.x * b.x + a.y * b.y;
+    }
+
     void swap() {
         std::swap(x, y);
     }

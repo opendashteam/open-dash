@@ -332,6 +332,7 @@ void SDLGPUGraphics::meshResize(InternalMesh rawMesh, u32 vertexCapacity) {
         gpu::release(mesh->vertexBuffer);
     }
 
+    mesh->vertexCapacity = vertexCapacity;
     mesh->vertexBuffer = newVertexBuffer;
     mesh->uploadBuffer = newUploadBuffer;
     mesh->mappedData = mappedData;

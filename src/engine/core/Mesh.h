@@ -17,7 +17,13 @@ class Mesh {
 public:
     ~Mesh();
 
-    void resize(u32 vertexCount);
+    void reserve(u32 vertexCount);
+
+    inline void resize(u32 vertexCount) {
+        if (vertexCount > capacity_)
+            reserve(vertexCount);
+        vertexCount_ = vertexCount;
+    }
 
     inline u32 getVertexCount() const {
         return vertexCount_;
@@ -28,6 +34,8 @@ public:
         after calling resize()
     */
     MeshVertex* getBuffer();
+
+    void flushRange(u32 index, u32 count);
 
     void drawSolid(
         const glm::mat4& positionTransform,
@@ -48,6 +56,7 @@ public:
 private:
     InternalMesh internal_;
     u32 vertexCount_ = 0;
+    u32 capacity_ = 0;
 };
 
 };

@@ -11,6 +11,7 @@
 #include "../engine/nodes/Button.h"
 #include "../engine/nodes/SpritePanel.h"
 #include "../engine/nodes/ParticleSystem.h"
+#include "../engine/nodes/DrawNode.h"
 #include "../engine/core/Director.h"
 #include "../engine/core/SpriteBatch.h"
 #include "../engine/utilities/log.h"
