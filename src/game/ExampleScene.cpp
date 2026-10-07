@@ -7,8 +7,8 @@ namespace opendash
 
 void ExampleScene::update(float dt) {
     Director::get()->moveCameraByX(
-        constants::player::kSpeedNormal *
-        constants::player::kTimeModNormal *
+        constants::player::kSpeedFastest *
+        constants::player::kTimeModFastest *
         constants::player::kPhysicsFrameRate *
         dt
     );

@@ -85,6 +85,56 @@ inline OutlineMesh computeOutlineCirclePoints(u32 segments) {
     return mesh;
 }
 
-// TODO slerp2D, squareDistance, etc...
+inline float slerp2D(float fromAngle, float toAngle, float t)
+{
+    float halfFrom = fromAngle * 0.5f;
+    float halfTo = toAngle   * 0.5f;
+
+    float cosFrom = cosf(halfFrom);
+    float sinFrom = sinf(halfFrom);
+    float cosTo = cosf(halfTo);
+    float sinTo = sinf(halfTo);
+
+    float cosOmega = (sinTo * sinFrom) + (cosTo * cosFrom);
+
+    if (cosOmega < 0.0f)
+    {
+        cosOmega = -cosOmega;
+        sinTo = -sinTo;
+        cosTo = -cosTo;
+    }
+
+    float coeff0 = 1.0f - t;
+    float coeff1 = t;
+
+    if ((1.0f - cosOmega) > 0.0001f)
+    {
+        float omega    = acosf(cosOmega);
+        float sinOmega = sinf(omega);
+        coeff0 = sinf((1.0f - t) * omega) / sinOmega;
+        coeff1 = sinf(t * omega) / sinOmega;
+    }
+
+    double halfResult = atan2((sinFrom * coeff0) + (coeff1 * sinTo), (cosFrom * coeff0) + (coeff1 * cosTo));
+
+    return (float)(halfResult + halfResult);
+}
+
+inline float squareDistance(float x1, float y1, float x2, float y2)
+{
+    return ((y2 - y1) * (y2 - y1)) + ((x2 - x1) * (x2 - x1));
+}
+
+inline void snapRotation360(float& rotation)
+{
+	if (rotation <= 180.0f) {
+		if (rotation < -180.0f) {
+			rotation += 360.0f;
+		}
+	}
+	else {
+		rotation -= 360.0f;
+	}
+}
     
 }

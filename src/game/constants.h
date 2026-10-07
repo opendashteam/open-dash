@@ -49,6 +49,7 @@ namespace opendash::constants
 
     namespace colors {
         inline constexpr engine::Color3B kDefaultGroundColor{0, 102, 255};
+        inline constexpr engine::Color3B kDefaultBackgroundColor{40, 126, 255};
     }
 
     namespace presets {
