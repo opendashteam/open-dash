@@ -5,32 +5,72 @@
 namespace opendash
 {
 
+static Point moveVector = {1, 0};
+
 void ExampleScene::update(float dt) {
-    Director::get()->moveCameraByX(
-        constants::player::kSpeedFastest *
-        constants::player::kTimeModFastest *
-        constants::player::kPhysicsFrameRate *
-        dt
-    );
+    float movementAmount = constants::player::kSpeedNormal *
+                           constants::player::kTimeModNormal *
+                           constants::player::kPhysicsFrameRate *
+                           dt;
+
+    Director::get()->moveCameraByX(movementAmount);
+    
+    // const float minY = 105.0f;
+    // const float maxY = Director::get()->getVisibleSize().height - exampleSprite_->getContentHeight() / 2;
+
+    // float y = exampleSprite_->getPositionY();
+    // if (inputDown_)
+    //     y += movementAmount;
+    // else
+    //     y -= movementAmount;
+
+    // auto oldPos = exampleSprite_->getPosition();
+
+    // exampleSprite_->setPositionY(std::clamp(y, minY, maxY));
+
+    // Point currentMoveVector = (exampleSprite_->getPosition() - oldPos).normalize();
+
+    // if (
+    //     std::abs(moveVector.x - currentMoveVector.x) > 0.01 ||
+    //     std::abs(moveVector.y - currentMoveVector.y) > 0.01
+    // ) {
+    //     moveVector = currentMoveVector;
+    //     waveTrail_->addPoint(oldPos);
+    // }
+
+    // waveTrail_->setPosition(exampleSprite_->getPosition());
+    // waveTrail_->setCurrentPoint(exampleSprite_->getPosition());
+    // waveTrail_->clearBehindXPos(Director::get()->getCameraPositionX() - 500.0f);
 }
 
 void ExampleScene::onCameraMoved() {
-    // FIXME TEMPORARY, DO NOT RELY ON THIS, IT IS WRONG!!!!!
+    // HACK: TEMPORARY, DO NOT RELY ON THIS, IT IS WRONG!!!!!
     ground_->setScrollX(Director::get()->getCameraPositionX());
+    ground_->setPositionY(-Director::get()->getCameraPositionY() + 91.0f);
+    
+    background_->setScrollX(Director::get()->getCameraPositionX() * 0.1f);
+    background_->setScrollY(-Director::get()->getCameraPositionY());
+
+    exampleSprite_->setPositionX(Director::get()->getVisibleSize().width / 2 - 75.0f + Director::get()->getCameraPositionX());
+}
+
+bool ExampleScene::onMouseDown(const Point &pos, MouseButton button) {
+    if (button == MouseButton::Left) {
+        inputDown_ = true;
+        return true;
+    }
+    return false;
+}
+
+void ExampleScene::onMouseUp(const Point& pos, MouseButton button) {
+    if (button == MouseButton::Left)
+        inputDown_ = false;
 }
 
 bool ExampleScene::init() {
     if (!Scene::init()) { // Always super init() first
         return false; 
     }
-
-    // Always call addChild first when creating a node
-    // to not have to deal with a stale pointer after the 
-    // unique_ptr's move operation
-    exampleSprite_ = addChild(Sprite::create("cube.png"));
-    exampleSprite_->setPositionX(Director::get()->getVisibleSize().width / 2 - 75.0f);
-    exampleSprite_->setPositionY(90.0f + 15.0f);
-    exampleSprite_->setIgnoreCameraPosition(true);
 
     // auto ps = addChild(ParticleSystem::create("speedEffect.plist"));
     // ps->positionType = PositionType::Relative;
@@ -57,12 +97,28 @@ bool ExampleScene::init() {
     //     circleEffect->setColor(Color3B::Green);        
     // }, 1.0f);
 
+    background_ = addChild(Background::create(1));
+
+    // Always call addChild first when creating a node
+    // to not have to deal with a stale pointer after the 
+    // unique_ptr's move operation
+    exampleSprite_ = addChild(Sprite::create("cube.png"));
+    exampleSprite_->setPositionY(90.0f + 15.0f);
+
     ground_ = addChild(Ground::create({
         .groundID = 1,
         .lineType = GroundLineType::Normal
     }));
 
     ground_->setPositionY(91.0f); // Correct
+
+    // waveTrail_ = addChild(WaveTrail::create());
+    // waveTrail_->scheduleAutoUpdate();
+    // waveTrail_->resumeStroke();
+    // waveTrail_->addPoint(exampleSprite_->getPosition());
+    // waveTrail_->setSolid(false);
+    // waveTrail_->setColor(Color3B {0, 125, 255});
+    // waveTrail_->setAdditiveBlending(true);
 
     // Director::get()->createBlinkTween(
     //     exampleSprite_,

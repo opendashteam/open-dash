@@ -142,7 +142,12 @@ void TilingSprite::draw(Graphics *gfx) {
     
     Size contentSize = getContentSize();
 
-    glm::vec2 uvPos  = tileOffset_.toGLM() / textureWorldSize_.toGLM();
+    glm::vec2 uvPos = tileOffset_.toGLM() / textureWorldSize_.toGLM();
+
+    if (mirroredRepeatY_) {
+        uvPos.y += 1.0f; // Start the first tile right side up
+    }
+
     glm::vec2 uvSize = (contentSize / textureWorldSize_).toGLM() / tileScale_.toGLM();
 
     glm::mat3 texTransform;

@@ -48,7 +48,7 @@ void Ground::createShadows() {
 
 void Ground::createTiles() {
     Size visibleSize = Director::get()->getVisibleSize();
-
+                                                            // TODO: find a way to make "uhd" resolve automatically
     primarySprite_ = addChild(TilingSprite::create(std::format("groundSquare_{:02d}_001-uhd.png", options_.groundID)));
     primarySprite_->setContentWidth(visibleSize.width);
     primarySprite_->setColor(constants::colors::kDefaultGroundColor);
