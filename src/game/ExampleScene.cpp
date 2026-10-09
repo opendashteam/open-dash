@@ -54,7 +54,7 @@ void ExampleScene::onCameraMoved() {
     exampleSprite_->setPositionX(Director::get()->getVisibleSize().width / 2 - 75.0f + Director::get()->getCameraPositionX());
 }
 
-bool ExampleScene::onMouseDown(const Point &pos, MouseButton button) {
+bool ExampleScene::onMouseDown(const Point& pos, MouseButton button) {
     if (button == MouseButton::Left) {
         inputDown_ = true;
         return true;
@@ -82,20 +82,21 @@ bool ExampleScene::init() {
     // auto visibleSize = Director::get()->getVisibleSize();
 
     // // TIMEWARP
-    // Director::get()->setTimeScale(1.0f);
+    Director::get()->setTimeScale(0.1f);
 
-    // Director::get()->scheduleOnce([this]() {
-    //     addChild(CircleWave::create(
-    //         constants::presets::kCircleEffectPortalWave
-    //     ))->setFollowTarget(exampleSprite_);
+    Director::get()->scheduleOnce([this]() {
+        addChild(CircleWave::create(
+            constants::presets::kCircleEffectPortalWave
+        ))->follow(exampleSprite_);
 
-    //     auto circleEffect = addChild(CircleWave::create(
-    //         constants::presets::kCircleEffectPortalWaveExtra
-    //     ));
+        auto circleEffect = addChild(CircleWave::create(
+            constants::presets::kCircleEffectPortalWaveExtra
+        ));
 
-    //     circleEffect->setPosition(exampleSprite_->getPosition());
-    //     circleEffect->setColor(Color3B::Green);        
-    // }, 1.0f);
+        circleEffect->follow(exampleSprite_);
+        circleEffect->setPosition(exampleSprite_->getPosition());
+        circleEffect->setColor(Color3B::Green);        
+    }, 0.2f);
 
     background_ = addChild(Background::create(1));
 

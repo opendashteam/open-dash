@@ -73,7 +73,7 @@ public:
     Point toScreenPosition(const Point& worldPos) const;
 
     // Tween stuff
-    Tween* createTween(const TweenOptions& opt);
+    Tween& createTween();
     void removeTween(Tween* tween);
     void handleTweens();
 

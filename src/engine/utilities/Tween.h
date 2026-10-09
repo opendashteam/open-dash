@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../core/types.h"
+#include "../core/macros.h"
 
 namespace opendash::engine
 {
@@ -33,33 +34,23 @@ enum class EasingType {
     BackInOut,
 };
 
-enum class EasingDirection {
-    In, Out, InOut
-};
-
-struct TweenOptions {
-
-    // Required
-    float from;
-    float to;
-    float duration;
-    EasingType easingType;
-    Callback<float> onUpdate;
-
-    // Optional
-    Callback<> onComplete;
-    float rate = 2.0f; // for Ease functions
-    float period = 0.3f; // for Elastic functions
-    bool deleteSelf = false; // (Runs AFTER onComplete()) Delete the tween from Director once completed
-};
-
 class Tween {
 public:
-    static std::unique_ptr<Tween> create(const TweenOptions& opt);
+    CREATE_FUNC(Tween)
 
     void update(float dt);
     bool isFinished();
-    bool init(const TweenOptions& opt);
+    bool init();
+
+    Tween& from(float from);
+    Tween& to(float to);
+    Tween& duration(float duration);
+    Tween& type(const EasingType& type);
+    Tween& onUpdate(Callback<float> callback);
+    Tween& onComplete(Callback<> callback);
+    Tween& rate(float rate); // for Ease functions
+    Tween& period(float period); // for Elastic functions
+    Tween& deleteSelf(); // (Runs AFTER onComplete()) Delete the tween from Director once completed
 
     /*
         Set a delay in seconds for this tween. This should always be called
@@ -151,17 +142,19 @@ public:
     /*
         Returns true if the tween is active.
     */
-	bool isRunning() const;
-
-    // Tween() = default;
-    // Tween(const Tween&) = delete;
-    // Tween& operator=(const Tween&) = delete;
-    // Tween(Tween&&) = delete;
-    // Tween& operator=(Tween&&) = delete;   
+	bool isRunning() const;  
 private:
 
     // Fixed config
-    TweenOptions opt_;
+    float from_ = 0.0f;
+    float to_ = 0.0f;
+    float duration_ = 0.0f;
+    EasingType easingType_;
+    Callback<float> onUpdate_;
+    Callback<> onComplete_ = nullptr;
+    float rate_ = 2.0f;
+    float period_ = 0.3f;
+    bool deleteSelf_ = false;
     std::function<float(float)> easeFn_ = nullptr;
 
     // Mutable config
@@ -170,7 +163,6 @@ private:
 	bool repeatForever_ = false;
 	int repeatsLeft_ = 0;
 	int totalRepeats_ = 0;
-    float period_ = 0.3f; // for Elastic functions
 
     // Runtime state
     float elapsedInCycle_ = 0.0f;

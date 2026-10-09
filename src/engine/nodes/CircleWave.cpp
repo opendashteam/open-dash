@@ -15,7 +15,7 @@ u32 getLODForRadius(float radius) {
     else                      return 50;
 }
 
-std::unique_ptr<CircleWave> CircleWave::create(const CircleWaveOptions &opt) {
+std::unique_ptr<CircleWave> CircleWave::create(const CircleWavePreset &opt) {
     std::unique_ptr<CircleWave> ret = std::make_unique<CircleWave>();
 
     if (!ret->init(opt)) {
@@ -25,27 +25,28 @@ std::unique_ptr<CircleWave> CircleWave::create(const CircleWaveOptions &opt) {
     return ret;
 }
 
-void CircleWave::setOpacityMod(float opacityMod) {
-    opacityMod_ = opacityMod;
-}
-
-void CircleWave::setFollowTarget(Node *followTarget) {
+CircleWave &CircleWave::follow(Node *followTarget) {
     followTarget_ = followTarget;
-    if (followTarget_) {
-        setPosition(followTarget_->getPosition());
-    }
+    return *this;    
 }
 
-float CircleWave::getOpacityMod() const {
-    return opacityMod_;
+CircleWave &CircleWave::opacityMod(float opacityMod) {
+    opacityMod_ = opacityMod;
+    return *this;
 }
 
-bool CircleWave::init(const CircleWaveOptions& opt) {
+bool CircleWave::init(const CircleWavePreset &opt) {
     if (!ColorNode::init()) {
         return false;
     }
 
     radius_ = opt.startRadius;
+    startRadius_ = opt.startRadius;
+    endRadius_ = opt.endRadius;
+    duration_ = opt.duration;
+    fadeIn_ = opt.fadeIn;
+    easeOut_ = opt.easeOut;
+    blending_ = opt.blending;
     lineWidth_ = opt.lineWidth;
     blending_ = opt.blending;
     followTarget_ = opt.followTarget;
@@ -56,55 +57,49 @@ bool CircleWave::init(const CircleWaveOptions& opt) {
         setPosition(followTarget_->getPosition());
     }
 
-    EasingType type = (opt.easeOut && !opt.fadeIn)
+    EasingType type = (easeOut_ && !fadeIn_)
                     ? EasingType::EaseOut
                     : EasingType::Linear;
 
-    incrementTweenCount(2);
+    incrementTweenCount(2); // TODO: Might need a more robust system than this
 
-    auto radiusTween = Director::get()->createTween({
-        .from       = opt.startRadius,
-        .to         = opt.endRadius,
-        .duration   = opt.duration,
-        .easingType = type,
-        .onUpdate   = [opt, this](float value) {
+    auto& radiusTween = Director::get()->createTween()
+        .from(startRadius_)
+        .to(endRadius_)
+        .duration(duration_)
+        .type(type)
+        .onUpdate([this](float value) {
             radius_ = value;
-            if (opt.followTarget) setPosition(opt.followTarget->getPosition());
-        },
-        .onComplete = [this]() {
+            if (followTarget_) setPosition(followTarget_->getPosition());
+        })
+        .onComplete([this]() {
             decrementTweenCount();
-        },
-        .deleteSelf = true
-    })
-    ->start();
+        })
+        .deleteSelf()
+        .start();
 
-    float startOpacity = opt.fadeIn ? 0.0f : 1.0f;
-    float endOpacity   = opt.fadeIn ? 1.0f : 0.0f;
-    float duration  = opt.fadeIn ? opt.duration * 0.5f : opt.duration;
+    float startOpacity = fadeIn_ ? 0.0f : 1.0f;
+    float endOpacity   = fadeIn_ ? 1.0f : 0.0f;
+    float duration  = fadeIn_ ? duration_ * 0.5f : duration_;
 
-    auto opacityTween = Director::get()->createTween({
-        .from       = startOpacity,
-        .to         = endOpacity,
-        .duration   = duration,
-        .easingType = type,
-        .onUpdate   = [this](float value) {
+    auto& opacityTween = Director::get()->createTween()
+        .from(startOpacity)
+        .to(endOpacity)
+        .duration(duration)
+        .type(type)
+        .onUpdate([this](float value) {
             setOpacityF(value * std::clamp(opacityMod_, 0.0f, 1.0f));
-        },
-        .onComplete = [this]() {
+        })
+        .onComplete([this]() {
             decrementTweenCount();
-        },
-        .deleteSelf = true
-    });
+        })
+        .deleteSelf();
 
-    if (opt.fadeIn) opacityTween->enableYoyo();
+    if (fadeIn_) opacityTween.enableYoyo();
 
-    opacityTween->start();
+    opacityTween.start();
 
     return true;
-}
-
-Node *CircleWave::getFollowTarget() const {
-    return followTarget_;
 }
 
 void CircleWave::onAllTweensFinished() {

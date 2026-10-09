@@ -203,12 +203,12 @@ const Size& Director::getVisibleSize() const {
 
 const Size &Director::getFrameSize() const { return frameSize_; }
 
-Tween* Director::createTween(const TweenOptions &opt) {
-    auto tween = Tween::create(opt);
+Tween& Director::createTween() {
+    auto tween = Tween::create();
     Tween* ret = tween.get();
     
     tweens_.push_back(std::move(tween)); 
-    return ret;
+    return *ret;
 }
 
 void Director::removeTween(Tween *tween) {
@@ -219,26 +219,23 @@ void Director::removeTween(Tween *tween) {
 void Director::createBlinkTween(Node* target, float duration, u32 blinks, Callback<> onComplete) {
     if (!target) return;
 
-    auto tween = Tween::create({
-        .from = 0.0f,
-        .to = 1.0f,
-        .duration = duration,
-        .easingType = EasingType::Linear,
-        .onUpdate = [target, blinks](float time) {
+    createTween()
+        .from(0.0f)
+        .to(0.0f)
+        .duration(duration)
+        .type(EasingType::Linear)
+        .onUpdate([target, blinks](float time) {
             if (!target) return;
 
             float slice = 1.0f / blinks;
             float m = fmodf(time, slice);
             target->setVisible(m > slice / 2);
-        },
-        .onComplete = [onComplete]() {
+        })
+        .onComplete([onComplete]() {
             if (onComplete) onComplete();
-        },
-        .deleteSelf = true
-    });
-
-    tween->start();
-    tweens_.push_back(std::move(tween));
+        })
+        .deleteSelf()
+        .start();
 }
 
 void Director::scheduleNextFrame(Callback<> callback) {
@@ -249,7 +246,7 @@ void Director::scheduleNextFrame(Callback<> callback) {
 }
 
 // WARNING: You will run into bugs if you schedule from inside another callback
-// Fix later if needed, keep this for now
+// TODO: make sequence system
 void Director::scheduleOnce(Callback<> callback, float delaySeconds) {
     if (!callback) return;
 

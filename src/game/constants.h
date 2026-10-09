@@ -53,164 +53,164 @@ namespace opendash::constants
     }
 
     namespace presets {
-        inline constexpr engine::CircleWaveOptions kCircleEffectJumpPadGeneric {
+        inline constexpr engine::CircleWavePreset kCircleEffectJumpPadGeneric {
             .startRadius = 10.0f,
             .endRadius   = 40.0f,
             .duration    = 0.25f,
             .fadeIn      = false
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectRedJumpPadBig { // When not mini and red jump pad
+        inline constexpr engine::CircleWavePreset kCircleEffectRedJumpPadBig { // When not mini and red jump pad
             .startRadius = 12.0f,
             .endRadius   = 40.0f,
             .duration    = 0.25f,
             .fadeIn      = false
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectPlayerSpawn {
+        inline constexpr engine::CircleWavePreset kCircleEffectPlayerSpawn {
             .startRadius = 70.0f,
             .endRadius   = 2.0f,
             .duration    = 0.3f,
             .fadeIn      = true,
             .circleMode  = engine::CircleMode::Outline
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectJumpRingEnter {
+        inline constexpr engine::CircleWavePreset kCircleEffectJumpRingEnter {
             .startRadius = 5.0f,
             .endRadius   = 55.0f,
             .duration    = 0.25f,
             .fadeIn      = false,
             .circleMode  = engine::CircleMode::Outline
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectDualModeEnter {
+        inline constexpr engine::CircleWavePreset kCircleEffectDualModeEnter {
             .startRadius = 50.0f,
             .endRadius   = 2.0f,
             .duration    = 0.25f,
             .fadeIn      = true
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectBecameMiniSize {
+        inline constexpr engine::CircleWavePreset kCircleEffectBecameMiniSize {
             .startRadius = 50.0f,
             .endRadius   = 2.0f,
             .duration    = 0.25f,
             .fadeIn      = true,
             .color       = {255, 0, 150}
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectBecameNormalSize {
+        inline constexpr engine::CircleWavePreset kCircleEffectBecameNormalSize {
             .startRadius = 10.0f,
             .endRadius   = 40.0f,
             .duration    = 0.3f,
             .fadeIn      = false,
             .color       = {0, 255, 150}
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectJumpRingHitGeneric {
+        inline constexpr engine::CircleWavePreset kCircleEffectJumpRingHitGeneric {
             .startRadius = 35.0f,
             .endRadius   = 5.0f,
             .duration    = 0.35f,
             .fadeIn      = true,
             .easeOut     = true
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectRedJumpRingHit {
+        inline constexpr engine::CircleWavePreset kCircleEffectRedJumpRingHit {
             .startRadius = 42.0f,
             .endRadius   = 5.0f,
             .duration    = 0.35f,
             .fadeIn      = true,
             .easeOut     = true
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectPortalSize {
+        inline constexpr engine::CircleWavePreset kCircleEffectPortalSize {
             .startRadius = 45.0f,
             .endRadius   = 5.0f,
             .duration    = 0.3f,
             .fadeIn      = true,
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectPortalGravityFlipped {
+        inline constexpr engine::CircleWavePreset kCircleEffectPortalGravityFlipped {
             .startRadius = 45.0f,
             .endRadius   = 5.0f,
             .duration    = 0.3f,
             .fadeIn      = true,
             .color       = engine::Color3B::GoldenYellow
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectPortalGravityRestored {
+        inline constexpr engine::CircleWavePreset kCircleEffectPortalGravityRestored {
             .startRadius = 45.0f,
             .endRadius   = 5.0f,
             .duration    = 0.3f,
             .fadeIn      = true,
             .color       = engine::Color3B::VividBlue
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectPortalSwing {
+        inline constexpr engine::CircleWavePreset kCircleEffectPortalSwing {
             .startRadius = 50.0f,
             .endRadius   = 5.0f,
             .duration    = 0.3f,
             .fadeIn      = true,
             .color       = engine::Color3B::GoldenYellow
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectPortalSpider {
+        inline constexpr engine::CircleWavePreset kCircleEffectPortalSpider {
             .startRadius = 50.0f,
             .endRadius   = 5.0f,
             .duration    = 0.3f,
             .fadeIn      = true,
             .color       = engine::Color3B::VividRed
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectPortalShip {
+        inline constexpr engine::CircleWavePreset kCircleEffectPortalShip {
             .startRadius = 50.0f,
             .endRadius   = 5.0f,
             .duration    = 0.3f,
             .fadeIn      = true,
             .color       = engine::Color3B::Magenta
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectPortalUFO {
+        inline constexpr engine::CircleWavePreset kCircleEffectPortalUFO {
             .startRadius = 50.0f,
             .endRadius   = 5.0f,
             .duration    = 0.3f,
             .fadeIn      = true,
             .color       = engine::Color3B::GoldenYellow
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectPortalWave {
+        inline constexpr engine::CircleWavePreset kCircleEffectPortalWave {
             .startRadius = 50.0f,
             .endRadius   = 5.0f,
             .duration    = 0.3f,
             .fadeIn      = true,
             .color       = engine::Color3B::GoldenYellow            
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectPortalWaveExtra {
+        inline constexpr engine::CircleWavePreset kCircleEffectPortalWaveExtra {
             .startRadius = 10.0f,
             .endRadius   = 60.0f,
             .duration    = 0.4f,
             .fadeIn      = false,
             .circleMode  = engine::CircleMode::Outline
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectPortalBall {
+        inline constexpr engine::CircleWavePreset kCircleEffectPortalBall {
             .startRadius = 50.0f,
             .endRadius   = 5.0f,
             .duration    = 0.3f,
             .fadeIn      = true,
             .color       = engine::Color3B::VividRed
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectPortalMirrorOrange {
+        inline constexpr engine::CircleWavePreset kCircleEffectPortalMirrorOrange {
             .startRadius = 50.0f,
             .endRadius   = 5.0f,
             .duration    = 0.3f,
             .fadeIn      = true,
             .color       = engine::Color3B::BrightOrange
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectPortalMirrorBlue {
+        inline constexpr engine::CircleWavePreset kCircleEffectPortalMirrorBlue {
             .startRadius = 50.0f,
             .endRadius   = 5.0f,
             .duration    = 0.3f,
             .fadeIn      = true,
             .color       = engine::Color3B::Cyan
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectPortalTeleportOrange {
+        inline constexpr engine::CircleWavePreset kCircleEffectPortalTeleportOrange {
             .startRadius = 50.0f,
             .endRadius   = 5.0f,
             .duration    = 0.3f,
             .fadeIn      = true,
             .color       = engine::Color3B::GoldenYellow
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectPortalTeleportBlue {
+        inline constexpr engine::CircleWavePreset kCircleEffectPortalTeleportBlue {
             .startRadius = 50.0f,
             .endRadius   = 5.0f,
             .duration    = 0.3f,
             .fadeIn      = true,
             .color       = engine::Color3B::Cyan
         };
-        inline constexpr engine::CircleWaveOptions kCircleEffectPortalDualOff {
+        inline constexpr engine::CircleWavePreset kCircleEffectPortalDualOff {
             .startRadius = 50.0f,
             .endRadius   = 5.0f,
             .duration    = 0.3f,
