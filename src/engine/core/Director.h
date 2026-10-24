@@ -20,6 +20,7 @@ struct ScheduledCallback {
 */
 class Director : public Singleton<Director> {
     friend class Singleton<Director>;
+    friend class Tween;
 public:
     void tick();
 
@@ -72,14 +73,6 @@ public:
     Point toWorldPosition(const Point& screenPos) const;
     Point toScreenPosition(const Point& worldPos) const;
 
-    // Tween stuff
-    Tween& createTween();
-    void removeTween(Tween* tween);
-    void handleTweens();
-
-    // Types of tweens
-    void createBlinkTween(Node* target, float duration, u32 blinks, Callback<> onComplete);
-
     // Scheduling-related
     void scheduleNextFrame(Callback<> callback);
     void scheduleOnce(Callback<> callback, float delaySeconds);
@@ -99,6 +92,11 @@ protected:
     bool init() override;
     void computeDeltaTime();
     void updateLayouts();
+private:
+    Tween& queueTween(std::unique_ptr<Tween> tween);
+    void startTween(Tween* tween);
+    void removeTween(Tween* tween);
+    void handleTweens();
 private:
     inline static Director* instance_ = nullptr;
 
@@ -134,7 +132,9 @@ private:
     float screenScaleFactorMax_ = 0.0f;
     float screenScale_          = 0.0f;
 
-    std::vector<std::unique_ptr<Tween>> tweens_{};
+
+    std::vector<std::unique_ptr<Tween>> allTweens_{};
+    std::vector<Tween*> activeTweens_{};
     std::vector<Tween*> pendingTweenRemovals_;
 
     std::vector<ScheduledCallback> scheduledCallbacks_{};

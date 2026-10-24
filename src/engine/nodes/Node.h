@@ -162,10 +162,6 @@ public:
     inline void makeHeightHugContents() { setAutoHeight(AutoSize::HugContents); }
 
     void removeFromParentAndCleanup();
-    void incrementTweenCount(u32 increment = 1);
-    void decrementTweenCount(u32 decrement = 1);
-
-    virtual void onAllTweensFinished();
 
 protected:
     virtual bool init();
@@ -208,8 +204,6 @@ private:
     bool isVisible_ = true;
     bool ignoreCameraPosition_ = false;
     bool effectiveIgnoreCameraPosition_ = false;
-
-    u32 activeTweenCount_ = 0;
 
     // TEMPORARY: Until we have an update scheduler
     bool shouldScheduleUpdate_ = false;

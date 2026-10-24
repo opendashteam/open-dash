@@ -5,6 +5,7 @@
 
 namespace opendash::platform
 {
+
 // This is implemented in sdl/Window.cpp
 bool windowHandleEvent(const SDL_Event& event);
 };

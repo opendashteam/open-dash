@@ -1,11 +1,10 @@
 #include "Tween.h"
-#include "../core/macros.h"
 #include "../core/Director.h"
 
 namespace opendash::engine
 {
 
-inline float bounceTime(float time) {
+float bounceTime(float time) {
     if (time < 1 / 2.75) {
         return 7.5625f * time * time;
     }
@@ -24,187 +23,85 @@ inline float bounceTime(float time) {
     return 7.5625f * time * time + 0.984375f;
 }
 
-template <typename T>
-inline T lerpValue(const T& from, const T& to, float t) {
-    return from + (to - from) * t;
-}
-
-void Tween::update(float dt) {
-    if (!running_ || paused_ || finished_ || !easeFn_) {
-		running_ = false;
-		return;
-	}
-
-    if (startDelayRemaining_ > 0.0f) {
-        startDelayRemaining_ -= dt;
-        if (startDelayRemaining_ > 0.0f) return;
-
-        dt = -startDelayRemaining_;
-        startDelayRemaining_ = 0.0f;
-    }
-
-	running_ = true;
-
-    elapsedInCycle_ += dt;
-
-    float t = duration_ <= 0.0f
-		? 1.0f
-		: std::min(elapsedInCycle_ / duration_, 1.0f);
-	
-    float eased = easeFn_(reversed_ ? 1.0f - t : t);
-
-    if (onUpdate_) onUpdate_(lerpValue(from_, to_, eased));
-	
-	if (duration_ <= 0.0f) {
-		finished_ = true;
-		running_ = false;
-
-		if (onComplete_) {
-            if (deleteSelf_) {
-                if (auto director = Director::get()) director->removeTween(this);
-            }
-            onComplete_();
-        }
-	} else if (t >= 1.0f) {
-		if (yoyoMode_ && !reversed_) {
-			reversed_ = true;
-			elapsedInCycle_ = 0.0f;
-			cyclesCompleted_++;
-			return;
-		}
-
-        bool continueLooping = false;
-
-        if (!stopRepeatingRequested_) {
-            if (repeatForever_)
-				continueLooping = true;
-
-            else if (repeatsLeft_ > 0) {
-				repeatsLeft_--;
-				continueLooping = true;
-			}
-        }
-
-        if (continueLooping) { 
-            elapsedInCycle_ = 0.0f;
-			reversed_ = false;
-            cyclesCompleted_++;
-        } else {
-            finished_ = true;
-			running_ = false;
-
-            if (onComplete_) {
-                if (deleteSelf_) {
-                    if (auto director = Director::get()) director->removeTween(this);
-                }
-                onComplete_();
-            }
-        }
-    }
-}
-
-bool Tween::isFinished() {
-	return finished_;
-}
-
-bool Tween::init() { 
-    switch (easingType_) {
+/*
+    Easing functions ported from cocos2d-x source.
+*/
+std::function<float(float)> getEasingFunction(const EasingType& easing, float rate = 2.0f, float period = 0.3f) {
+    switch (easing) {
         case EasingType::Linear:
-            easeFn_ = [](float t) { return t; };
-            break;
+            return [](float t) { return t; };
         case EasingType::EaseIn:
-            easeFn_ = [this](float t) { return powf(t, rate_); };
-            break;
+            return [rate](float t) { return powf(t, rate); };
         case EasingType::EaseOut:
-            easeFn_ = [this](float t) { return powf(t, 1 / rate_); };
-            break;
+            return [rate](float t) { return powf(t, 1 / rate); };
         case EasingType::EaseInOut:
-            easeFn_ = [this](float t) {
+            return [rate](float t) {
                 t *= 2;
                 if (t < 1)
-                {
-                    return 0.5f * powf(t, rate_);
-                }
+                    return 0.5f * powf(t, rate);
                 else
-                {
-                    return 1.0f - 0.5f * powf(2-t, rate_);
-                }
+                    return 1.0f - 0.5f * powf(2-t, rate);
             };
-            break;
         case EasingType::ExponentialIn:
-            easeFn_ = [](float t) {
+            return [](float t) {
                 return t == 0 ? 0 : powf(2, 10 * (t/1 - 1)) - 1 * 0.001f;
             };
-            break;
         case EasingType::ExponentialOut:
-            easeFn_ = [](float t) {
+            return [](float t) {
                 return t == 1 ? 1 : (-powf(2, -10 * t / 1) + 1);
             };
-            break;
         case EasingType::ExponentialInOut:
-            easeFn_ = [](float t) {
+            return [](float t) {
                 t /= 0.5f;
                 if (t < 1)
-                {
                     t = 0.5f * powf(2, 10 * (t - 1));
-                }
                 else
-                {
                     t = 0.5f * (-powf(2, -10 * (t - 1)) + 2);
-                }
 
                 return t;
             };
-            break;
         case EasingType::SineIn:
-            easeFn_ = [](float t) {
+            return [](float t) {
                 return -1 * cosf(t * (float)CC_PI_2) + 1;
             };
-            break;
         case EasingType::SineOut:
-            easeFn_ = [](float t) {
+            return [](float t) {
                 return sinf(t * (float)CC_PI_2);
             };
-            break;
         case EasingType::SineInOut:
-            easeFn_ = [](float t) {
+            return [](float t) {
                 return -0.5f * (cosf((float)CC_PI_2 * t) - 1);
             };
-            break;
         case EasingType::ElasticIn:
-            easeFn_ = [this](float t) {
+            return [period](float t) {
                 float newT = 0;
                 if (t == 0 || t == 1)
-                {
                     newT = t;
-                }
                 else
                 {
-                    float s = period_ / 4;
+                    float s = period / 4;
                     t -= 1;
-                    newT = -powf(2, 10 * t) * sinf((t - s) * CC_PI_X_2 / period_);
+                    newT = -powf(2, 10 * t) * sinf((t - s) * CC_PI_X_2 / period);
                 }
 
                 return newT;
             };
-            break;
         case EasingType::ElasticOut:
-            easeFn_ = [this](float t) {
+            return [period](float t) {
                 float newT = 0;
 
                 if (t == 0 || t == 1)
                     newT = t;
                 else
                 {
-                    float s = period_ / 4;
-                    newT = powf(2, -10 * t) * sinf((t - s) * CC_PI_X_2 / period_) + 1;
+                    float s = period / 4;
+                    newT = powf(2, -10 * t) * sinf((t - s) * CC_PI_X_2 / period) + 1;
                 }
 
                 return newT;
             };
-            break;
         case EasingType::ElasticInOut:
-            easeFn_ = [this](float t) {
+            return [period](float t) {
                 float newT = 0;
 
                 if (t == 0 || t == 1)
@@ -212,54 +109,47 @@ bool Tween::init() {
                 else
                 {
                     t *= 2;
-                    if (!period_)
-                        period_ = 0.3f * 1.5f;
+                    float p = period == 0.0f ? 0.3f * 1.5f : period;
                     
-                    float s = period_ / 4;
+                    float s = p / 4;
 
                     t -= 1;
                     if (t < 0)
-                        newT = -0.5f * powf(2, 10 * t) * sinf((t -s) * CC_PI_X_2 / period_);
+                        newT = -0.5f * powf(2, 10 * t) * sinf((t -s) * CC_PI_X_2 / p);
                     else
-                        newT = powf(2, -10 * t) * sinf((t - s) * CC_PI_X_2 / period_) * 0.5f + 1;
+                        newT = powf(2, -10 * t) * sinf((t - s) * CC_PI_X_2 / p) * 0.5f + 1;
                 }
 
                 return newT;
             };
-            break;
         case EasingType::BounceIn:
-            easeFn_ = [](float t) {
+            return [](float t) {
                 return 1 - bounceTime(1 - t);
             };
-            break;
         case EasingType::BounceOut:
-            easeFn_ = [](float t) {
+            return [](float t) {
                 return bounceTime(t);
             };
-            break;
         case EasingType::BounceInOut:
-            easeFn_ = [](float t) {
+            return [](float t) {
                 if (t < 0.5f)
                     return (1 - bounceTime(1 - t * 2)) * 0.5f;
                 else
                     return bounceTime(t * 2 - 1) * 0.5f + 0.5f;
             };
-            break;
         case EasingType::BackIn:
-            easeFn_ = [](float t) {
+            return [](float t) {
                 float overshoot = 1.70158f;
                 return t * t * ((overshoot + 1) * t - overshoot);
             };
-            break;
         case EasingType::BackOut:
-            easeFn_ = [](float t) {
+            return [](float t) {
                 float overshoot = 1.70158f;
                 t -= 1;
                 return t * t * ((overshoot + 1) * t + overshoot) + 1;
             };
-            break;
         case EasingType::BackInOut:
-            easeFn_ = [](float t) {
+            return [](float t) {
                 float overshoot = 1.70158f * 1.525f;
 
                 t *= 2;
@@ -271,172 +161,167 @@ bool Tween::init() {
                     return (t * t * ((overshoot + 1) * t + overshoot)) / 2 + 1;
                 }
             };
-            break;
         default:
-            return false;
+            return nullptr;
     }
-
-    return true;
 }
-Tween &Tween::from(float from) {
-    from_ = from;
+
+Tween& Tween::create(float initialValue) {
+    std::unique_ptr<Tween> t = std::make_unique<Tween>();
+    t->initialValue_ = initialValue;
+    t->from_ = initialValue;
+    t->value_ = initialValue;
+    return Director::get()->queueTween(std::move(t));
+}
+
+Tween& Tween::delay(float seconds) {
+    addKeyframe({
+        .duration = seconds,
+        .to = value_,
+        .easeFunction = nullptr,
+        .options = {}
+    });
     return *this;
 }
 
-Tween &Tween::to(float to) {
-    to_ = to;
+Tween& Tween::to(float duration, float to, const TweenOptions &options) {
+    addKeyframe({
+        .duration = duration,
+        .to = to,
+        .easeFunction = getEasingFunction(options.easing),
+        .options = options
+    });
     return *this;
 }
 
-Tween &Tween::duration(float duration) {
-    duration_ = duration;
+Tween& Tween::call(Callback<> call) {
+    addKeyframe({
+        .duration = 0.0f,
+        .to = value_,
+        .easeFunction = nullptr,
+        .options = {
+            .onComplete = call
+        }
+    });
     return *this;
 }
 
-Tween &Tween::type(const EasingType &type) {
-    easingType_ = type;
+Tween& Tween::retain() {
+    deleteSelf_ = false;
     return *this;
 }
 
-Tween &Tween::rate(float rate) {
-    rate_ = rate;
-    return *this;
-}
-
-Tween &Tween::period(float period) {
-    period_ = period;
-    return *this;
-}
-
-Tween &Tween::deleteSelf() {
-    deleteSelf_ = true;
-    return *this;
-}
-
-Tween &Tween::onComplete(Callback<> callback) {
-    onComplete_ = callback;
-    return *this;
-}
-
-Tween &Tween::onUpdate(Callback<float> callback) {
-    onUpdate_ = callback;
-    return *this;
-}
-
-
-Tween& Tween::setStartDelay(float delaySeconds) {
-	if (!running_)
-	{
-		startDelay_ = delaySeconds;
-		startDelayRemaining_ = delaySeconds;
-	}
-    return *this;
-}
-
-Tween& Tween::enableYoyo() {
+Tween &Tween::enableYoyo() {
     yoyoMode_ = true;
     return *this;
 }
 
-Tween& Tween::disableYoyo() {
-    yoyoMode_ = false;
-    return *this;
-}
-
-Tween& Tween::setRepeatCount(int repeatCount) {
-	if (!running_)
-	{
-		totalRepeats_ = repeatCount;
-		repeatsLeft_ = repeatCount;
-	}
-    return *this;
-}
-
-Tween& Tween::repeatForever() {
+Tween &Tween::repeatForever() {
     repeatForever_ = true;
     return *this;
 }
 
-Tween& Tween::stopRepeating() {
-    stopRepeatingRequested_ = true;
+Tween &Tween::stopRepeating() {
+    stopRepeatQueued_ = true;
     return *this;
 }
 
-Tween& Tween::restart() {
-    stop();
-    start();
-    return *this;
-}
-
-Tween& Tween::pause() {
-    paused_ = true;
-    return *this;
-}
-
-Tween& Tween::resume() {
-    paused_ = false;
-    return *this;
-}
-
-Tween& Tween::start() {
-    if (running_) return *this;
+void Tween::start() {
+    Director::get()->startTween(this);
     running_ = true;
-
-    return *this;
 }
 
-Tween& Tween::stop() {
+void Tween::stop() {
+    running_ = false;
+    restart();
+}
+
+void Tween::restart() {
+    keyframeIndex_ = 0;
+    value_ = initialValue_;
+    from_ = initialValue_;
+    reversed_ = false;
+}
+
+void Tween::addKeyframe(const TweenKeyframe& keyframe) {
+    keyFrames_.push_back(keyframe);
+    keyframeCount_++;
+}
+
+void Tween::pause() {
+    paused_ = true;
+}
+
+void Tween::resume() {
+    paused_ = false;
+}
+
+void Tween::disableYoyo() {
+    yoyoMode_ = false;
+}
+
+void Tween::step(float dt) {
+    if (!running_ || paused_ || keyframeCount_ <= 0) return;
+
+    elapsed_ += dt;
+
+    auto& kf = keyFrames_[keyframeIndex_];
+    auto& easeFn = kf.easeFunction;
+    float t = std::clamp(elapsed_ / kf.duration, 0.0f, 1.0f);
+
+    if (reversed_) t = 1.0f - t;
+
+    float easedT = easeFn ? easeFn(t) : t;
+
+    value_ = std::lerp(from_, kf.to, easedT);
+
+    if (auto& onUpdate = kf.options.onUpdate)
+        onUpdate(value_);
+
+    if (kf.duration <= 0.0f) {
+        keyframeCompleted(kf);
+        return;
+    }
+
+    if (t == 1.0f) {
+        if (kf.options.yoyo && !reversed_) {
+            reverseFromYoyo(kf);
+            return;
+        }
+        
+        if (repeatForever_ && !stopRepeatQueued_) {
+            reversed_ = false;
+            return;
+        }
+
+        else keyframeCompleted(kf);
+    }
+    
+}
+
+void Tween::keyframeCompleted(const TweenKeyframe& kf) {
+
+    if (auto& onComplete = kf.options.onComplete)
+        onComplete();
+
+    from_ = kf.to;
+    elapsed_ = 0.0f;
+    keyframeIndex_++;
+
+    if (keyframeIndex_ >= keyframeCount_)
+        tweenCompleted();
+}
+
+void Tween::tweenCompleted() {
     running_ = false;
 
-	startDelay_ = 0.0f;
-	repeatsLeft_ = totalRepeats_;
-	elapsedInCycle_ = 0.0f;
-	// startDelayRemaining_ = startDelay_;
-    reversed_ = false;
-    stopRepeatingRequested_ = false;
-    cyclesCompleted_ = 0;
-	finished_ = false;
-
-    return *this;
+    if (deleteSelf_)
+        Director::get()->removeTween(this);
 }
 
-float Tween::getCycleProgress() const {
-	if (duration_ <= 0.0f || finished_)
-	{
-		return 1.0f;
-	}
-
-	// A full round trip is two cycles when yo-yo mode is enabled.
-	
-	float cycleDuration = duration_;
-	float singleCycleProgress = elapsedInCycle_ / cycleDuration;
-
-	return std::clamp(singleCycleProgress, 0.0f, 1.0f);
+void Tween::reverseFromYoyo(const TweenKeyframe& kf) {
+    reversed_ = true;
+    elapsed_ = 0.0f;
 }
-
-float Tween::getTotalProgress() const {
-	if (duration_ <= 0.0f)
-		return 1.0f;
-
-	if (repeatForever_)
-		return 0.0f;
-
-	if (finished_)
-		return 1.0f;
-
-	int cyclesPerRepeat = yoyoMode_ ? 2 : 1;
-	int totalCycles = cyclesCompleted_ + (repeatsLeft_ + 1) * cyclesPerRepeat;
-
-	return (cyclesCompleted_ + getCycleProgress()) / static_cast<float>(totalCycles);
-}
-
-float Tween::getDuration() const {
-    return duration_;
-}
-
-bool Tween::isRunning() const {
-    return running_;
-}
-
 
 }

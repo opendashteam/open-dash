@@ -7,7 +7,9 @@ using namespace opendash;
 static std::unique_ptr<Application> application = nullptr;
 
 bool game::init() {
+    // TODO: store and load app resolution
     auto app = Application::create("Open Dash", 1600, 900);
+
     if (!app) 
         return false;
 

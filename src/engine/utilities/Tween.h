@@ -1,14 +1,14 @@
 #pragma once
 
 #include "../core/types.h"
-#include "../core/macros.h"
+#include <vector>
 
 namespace opendash::engine
 {
 
 enum class EasingType {
     Linear,
-    
+
     EaseIn,
     EaseOut,
     EaseInOut,
@@ -34,49 +34,50 @@ enum class EasingType {
     BackInOut,
 };
 
+struct TweenOptions {
+    EasingType easing = EasingType::Linear;
+    Callback<float> onUpdate = nullptr;
+    Callback<> onComplete = nullptr;
+    bool yoyo = false;
+};
+
+struct TweenKeyframe {
+    float duration;
+    float to;
+    std::function<float(float)> easeFunction;
+    TweenOptions options;
+};
+
 class Tween {
+    friend class Director;
 public:
-    CREATE_FUNC(Tween)
+    static Tween& create(float initialValue);
 
-    void update(float dt);
-    bool isFinished();
-    bool init();
-
-    Tween& from(float from);
-    Tween& to(float to);
-    Tween& duration(float duration);
-    Tween& type(const EasingType& type);
-    Tween& onUpdate(Callback<float> callback);
-    Tween& onComplete(Callback<> callback);
-    Tween& rate(float rate); // for Ease functions
-    Tween& period(float period); // for Elastic functions
-    Tween& deleteSelf(); // (Runs AFTER onComplete()) Delete the tween from Director once completed
+    Tween& delay(float seconds);
 
     /*
-        Set a delay in seconds for this tween. This should always be called
-        before `start()`, otherwise the delay will not be applied.
+        Note: onComplete on a keyframe runs the SAME frame that keyframe is done, while
+        a `.call()` chained will wait for a new frame to be called. Do not expect
+        onComplete and .call() to behave the same for single-keyframed tweens, they
+        execute a frame apart.
     */
-    Tween& setStartDelay(float delaySeconds);
+    Tween& to(float duration, float to, const TweenOptions& options);
+
+    /*
+        Chain a callback.
+    */
+    Tween& call(Callback<> call);
+
+    /*
+        Stops a tween from deleting itself upon completion.
+    */
+    Tween& retain();
 
     /*
         Enable yo-yo mode. The tween will reverse before calling `onComplete()` or repeating.
-        This is a no-op when duration is 0.
+        This is does nothing when the total duration is 0.
     */
     Tween& enableYoyo();
-
-    /*
-        Disable yo-yo mode. Future loops will restart the tween's progress instead of reversing.
-    */
-    Tween& disableYoyo();
-
-    /*
-        Set the number of times this tween should repeat before calling `onComplete()`.
-        This should always be called before `start()`, otherwise the new repeat count
-        will not be applied. Cancels infinite looping if `repeatForever()` was called earlier.
-        You cannot change the repeat count if the tween is already running.
-        This is a no-op when duration is 0.
-    */
-    Tween& setRepeatCount(int repeatCount);
 
     /*
         Sets the repeat count to infinity. The tween will loop until stopped by `stopRepeating()`.
@@ -86,93 +87,49 @@ public:
     Tween& repeatForever();
 
     /*
-        Cancels looping entirely. This applies to both finite and infinite repeat count.
-        If called during an active tween, scheduled loops in the future will be killed,
-        and `onComplete()` is called once the tween finishes.
+        Cancels looping entirely.
     */
     Tween& stopRepeating();
 
-    /*
-        Resets the tween's state and starts it up again instantly. This is an alternative to doing `stop()` followed by `start()`.
-    */
-    Tween& restart();
+    void start();
+    void pause();
+    void resume();
 
     /*
-        Pause the currently active tween.
-    */   
-    Tween& pause();
+        Stops the tween from running and resets progress.
+    */
+	void stop();
 
     /*
-        Resume the currently active tween.
+        Resets the tween's progress to the beginning.
     */
-    Tween& resume();
+    void restart();
 
-    /*
-        Begin the tween. This should be called after applying repeat count or start delay.
-    */
-	Tween& start();
-
-    /*
-        Stop the currently active tween and reset it to the beginning.
-    */
-	Tween& stop();
-
-    /*
-        Get the progress of a single tween in a 0-1 range.
-        If repeat is enabled, the progress returned will
-        jump back to 0 on each cycle. With yo-yo mode,
-        the forward motion and the backward motion will be treated
-        as two separate blocks of progress (0 -> 1, 0 -> 1).
-    */
-    float getCycleProgress() const;
-
-    /*
-        Get the tween's lifetime progress in a 0-1 range.
-        Returns 0 if infinite looping is enabled, unless
-        the duration is 0, then it returns 1.
-    */
-    float getTotalProgress() const;
-
-    /*
-        Get the duration of a single cycle in seconds. This time does not include
-        the reverse if yo-yo mode is enabled.
-    */
-	float getDuration() const;
-
-    /*
-        Returns true if the tween is active.
-    */
-	bool isRunning() const;  
+    void disableYoyo();
+    
 private:
+    void addKeyframe(const TweenKeyframe& keyframe);
+    void step(float dt);
+    void keyframeCompleted(const TweenKeyframe& kf);
+    void tweenCompleted();
+    void reverseFromYoyo(const TweenKeyframe& kf);
+private:
+    std::vector<TweenKeyframe> keyFrames_{};
+    int keyframeIndex_ = 0;
+    int keyframeCount_ = 0;
 
-    // Fixed config
+    float value_ = 0.0f;
+    float initialValue_ = 0.0f;
     float from_ = 0.0f;
-    float to_ = 0.0f;
-    float duration_ = 0.0f;
-    EasingType easingType_;
-    Callback<float> onUpdate_;
-    Callback<> onComplete_ = nullptr;
-    float rate_ = 2.0f;
-    float period_ = 0.3f;
-    bool deleteSelf_ = false;
-    std::function<float(float)> easeFn_ = nullptr;
+    float elapsed_ = 0.0f;
 
-    // Mutable config
-    float startDelay_ = 0.0f;
-    bool yoyoMode_ = false;
-	bool repeatForever_ = false;
-	int repeatsLeft_ = 0;
-	int totalRepeats_ = 0;
-
-    // Runtime state
-    float elapsedInCycle_ = 0.0f;
-	float startDelayRemaining_ = 0.0f;
-    bool reversed_ = false;
-	bool running_ = false;
     bool paused_ = false;
-    bool finished_ = false;
-    bool stopRepeatingRequested_ = false;
-    int cyclesCompleted_ = 0;
+    bool running_ = false;
+    bool deleteSelf_ = true;
+    bool yoyoMode_ = false;
+    bool reversed_ = false;
+    bool repeatForever_ = false;
+    bool stopRepeatQueued_ = false;
 };
 
 }

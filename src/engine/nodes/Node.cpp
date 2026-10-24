@@ -9,23 +9,8 @@ void Node::removeFromParentAndCleanup() {
         parent_->removeChild(this);
 
         // Cleanup...
+        // TODO: maybe cleanup active tweens
     }
-}
-
-void Node::incrementTweenCount(u32 increment) {
-    activeTweenCount_+= increment;
-}
-
-void Node::decrementTweenCount(u32 decrement) {
-    activeTweenCount_-= decrement;
-
-    if (activeTweenCount_ == 0) {
-        onAllTweensFinished();
-    }
-}
-
-void Node::onAllTweensFinished() {
-    // Override me
 }
 
 bool Node::init() {
@@ -118,13 +103,12 @@ void Node::visit(Graphics* gfx) {
     }
 }
 
-void Node::setPosition(const Point& position)
-{
-    if (position.x == position_.x && position.y == position_.y)
-        return;
-        
-	position_ = position;
-    markLocalTransformDirty();
+void Node::setPosition(const Point &position) {
+  if (position.x == position_.x && position.y == position_.y)
+    return;
+
+  position_ = position;
+  markLocalTransformDirty();
 }
 
 void Node::setPosition(const Size &sizeAsPosition)

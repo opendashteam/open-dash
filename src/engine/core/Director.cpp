@@ -38,19 +38,6 @@ void Director::updateLayouts() {
     areLayoutsDirty_ = false;
 }
 
-void Director::handleTweens() {
-    for (auto& tween : tweens_) {
-        if (tween) tween->update(scaledDeltaTime_);
-    }
-
-    for (Tween* target : pendingTweenRemovals_) {
-        std::erase_if(tweens_, [target](const std::unique_ptr<Tween>& t) {
-            return t.get() == target;
-        });
-    }
-    pendingTweenRemovals_.clear();
-}
-
 void Director::tick() {
     computeDeltaTime();
     handleTweens();
@@ -201,41 +188,40 @@ const Size& Director::getVisibleSize() const {
     return visibleSize_;
 }
 
-const Size &Director::getFrameSize() const { return frameSize_; }
+const Size &Director::getFrameSize() const {
+    return frameSize_;
+}
 
-Tween& Director::createTween() {
-    auto tween = Tween::create();
-    Tween* ret = tween.get();
-    
-    tweens_.push_back(std::move(tween)); 
-    return *ret;
+void Director::handleTweens() {
+    for (auto& tween : activeTweens_) {
+        if (tween) tween->step(scaledDeltaTime_);
+    }
+
+    for (Tween* target : pendingTweenRemovals_) {
+        std::erase_if(activeTweens_, [target](Tween* t) {
+            return t == target;
+        });
+
+        std::erase_if(allTweens_, [target](const std::unique_ptr<Tween>& t) {
+            return t.get() == target;
+        });
+    }
+
+    pendingTweenRemovals_.clear();
+}
+
+Tween& Director::queueTween(std::unique_ptr<Tween> tween) {
+    allTweens_.push_back(std::move(tween));
+    return *allTweens_.back();
+}
+
+void Director::startTween(Tween *tween) {
+    activeTweens_.push_back(tween);
 }
 
 void Director::removeTween(Tween *tween) {
     // Queue instead of deleting immediately
     pendingTweenRemovals_.push_back(tween);
-}
-
-void Director::createBlinkTween(Node* target, float duration, u32 blinks, Callback<> onComplete) {
-    if (!target) return;
-
-    createTween()
-        .from(0.0f)
-        .to(0.0f)
-        .duration(duration)
-        .type(EasingType::Linear)
-        .onUpdate([target, blinks](float time) {
-            if (!target) return;
-
-            float slice = 1.0f / blinks;
-            float m = fmodf(time, slice);
-            target->setVisible(m > slice / 2);
-        })
-        .onComplete([onComplete]() {
-            if (onComplete) onComplete();
-        })
-        .deleteSelf()
-        .start();
 }
 
 void Director::scheduleNextFrame(Callback<> callback) {
@@ -246,7 +232,6 @@ void Director::scheduleNextFrame(Callback<> callback) {
 }
 
 // WARNING: You will run into bugs if you schedule from inside another callback
-// TODO: make sequence system
 void Director::scheduleOnce(Callback<> callback, float delaySeconds) {
     if (!callback) return;
 
@@ -283,6 +268,8 @@ Point Director::toScreenPosition(const Point& worldPos) const {
         (1.0f - ndc.y) / 2.0f * frameSize_.height
     );
 }
+
+
 
 bool Director::init() {
     platform::Window::setInputScheduler(&inputScheduler_);

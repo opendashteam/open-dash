@@ -1,5 +1,6 @@
 #include "CircleWave.h"
-#include "../core/Director.h"
+// #include "../core/Director.h"
+#include "../utilities/Tween.h"
 
 namespace opendash::engine
 {
@@ -15,95 +16,71 @@ u32 getLODForRadius(float radius) {
     else                      return 50;
 }
 
-std::unique_ptr<CircleWave> CircleWave::create(const CircleWavePreset &opt) {
+std::unique_ptr<CircleWave> CircleWave::create(const CircleWavePreset &preset) {
     std::unique_ptr<CircleWave> ret = std::make_unique<CircleWave>();
 
-    if (!ret->init(opt)) {
+    if (!ret->init(preset)) {
         return nullptr;
     }
 
     return ret;
 }
 
-CircleWave &CircleWave::follow(Node *followTarget) {
+void CircleWave::follow(Node *followTarget) {
     followTarget_ = followTarget;
-    return *this;    
 }
 
-CircleWave &CircleWave::opacityMod(float opacityMod) {
+void CircleWave::setOpacityMod(float opacityMod) {
     opacityMod_ = opacityMod;
-    return *this;
 }
 
-bool CircleWave::init(const CircleWavePreset &opt) {
+bool CircleWave::init(const CircleWavePreset &preset) {
     if (!ColorNode::init()) {
         return false;
     }
 
-    radius_ = opt.startRadius;
-    startRadius_ = opt.startRadius;
-    endRadius_ = opt.endRadius;
-    duration_ = opt.duration;
-    fadeIn_ = opt.fadeIn;
-    easeOut_ = opt.easeOut;
-    blending_ = opt.blending;
-    lineWidth_ = opt.lineWidth;
-    blending_ = opt.blending;
-    followTarget_ = opt.followTarget;
-    circleMode_ = opt.circleMode;
-    setColor(opt.color);
+    radius_ = preset.startRadius;
+    blending_ = preset.blending;
+    lineWidth_ = preset.lineWidth;
+    circleMode_ = preset.circleMode;
+    setColor(preset.color);
 
     if (followTarget_) {
         setPosition(followTarget_->getPosition());
     }
 
-    EasingType type = (easeOut_ && !fadeIn_)
+    EasingType type = (preset.easeOut && !preset.fadeIn)
                     ? EasingType::EaseOut
                     : EasingType::Linear;
 
-    incrementTweenCount(2); // TODO: Might need a more robust system than this
+    float startOpacity = preset.fadeIn ? 0.0f : 1.0f;
+    float endOpacity   = preset.fadeIn ? 1.0f : 0.0f;
+    float opacityTweenDuration  = preset.fadeIn ? preset.duration * 0.5f : preset.duration;
 
-    auto& radiusTween = Director::get()->createTween()
-        .from(startRadius_)
-        .to(endRadius_)
-        .duration(duration_)
-        .type(type)
-        .onUpdate([this](float value) {
-            radius_ = value;
-            if (followTarget_) setPosition(followTarget_->getPosition());
+    Tween::create(preset.startRadius)
+        .to(preset.duration, preset.endRadius, {
+            .easing = type,
+            .onUpdate = [this](float value) {
+                radius_ = value;
+                if (followTarget_) setPosition(followTarget_->getPosition());
+            }
         })
-        .onComplete([this]() {
-            decrementTweenCount();
-        })
-        .deleteSelf()
         .start();
 
-    float startOpacity = fadeIn_ ? 0.0f : 1.0f;
-    float endOpacity   = fadeIn_ ? 1.0f : 0.0f;
-    float duration  = fadeIn_ ? duration_ * 0.5f : duration_;
-
-    auto& opacityTween = Director::get()->createTween()
-        .from(startOpacity)
-        .to(endOpacity)
-        .duration(duration)
-        .type(type)
-        .onUpdate([this](float value) {
-            setOpacityF(value * std::clamp(opacityMod_, 0.0f, 1.0f));
+    Tween::create(startOpacity)
+        .to(opacityTweenDuration, endOpacity, {
+            .easing = type,
+            .onUpdate = [this](float value) {
+                setOpacityF(value * std::clamp(opacityMod_, 0.0f, 1.0f));
+            },
+            .onComplete = [this] {
+                removeFromParentAndCleanup();
+            },
+            .yoyo = preset.fadeIn
         })
-        .onComplete([this]() {
-            decrementTweenCount();
-        })
-        .deleteSelf();
-
-    if (fadeIn_) opacityTween.enableYoyo();
-
-    opacityTween.start();
+        .start();
 
     return true;
-}
-
-void CircleWave::onAllTweensFinished() {
-    removeFromParentAndCleanup();
 }
 
 void CircleWave::draw(Graphics *gfx) {

@@ -23,32 +23,19 @@ struct CircleWavePreset {
     bool blending = true;
     int lineWidth = 2; // Screen pixels, not points
     CircleMode circleMode = CircleMode::Filled;
-    Node* followTarget = nullptr;
     Color3B color = Color3B::White;
 };
 
 class CircleWave : public ColorNode {
 public:
-    static std::unique_ptr<CircleWave> create(const CircleWavePreset& opt);
+    static std::unique_ptr<CircleWave> create(const CircleWavePreset& preset);
 
-    // CircleWave& startRadius(float startRadius);
-    // CircleWave& endRadius(float endRadius);
-    // CircleWave& duration(float duration);
-    // CircleWave& fadeIn(bool fadeIn);
-    // CircleWave& easeOut(bool easeOut);
-    // CircleWave& blending(bool blending);
-    // CircleWave& lineWidth(int lineWidth);
-    // CircleWave& mode(const CircleMode& mode);
-
-    CircleWave& follow(Node* followTarget);
-    CircleWave& opacityMod(float opacityMod);
-
-    void onAllTweensFinished() override;
+    void follow(Node* followTarget);
+    void setOpacityMod(float opacityMod);
 protected:
-    bool init(const CircleWavePreset& opt);
+    bool init(const CircleWavePreset& preset);
     void draw(Graphics* gfx) override;
 private:
-
     float startRadius_ = 0.0f;
     float endRadius_ = 0.0f;
     float duration_ = 0.0f;
