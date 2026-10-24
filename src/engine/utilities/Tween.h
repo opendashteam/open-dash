@@ -74,12 +74,6 @@ public:
     Tween& retain();
 
     /*
-        Enable yo-yo mode. The tween will reverse before calling `onComplete()` or repeating.
-        This is does nothing when the total duration is 0.
-    */
-    Tween& enableYoyo();
-
-    /*
         Sets the repeat count to infinity. The tween will loop until stopped by `stopRepeating()`.
         This overrides `setRepeatCount()` if called after it.
         This is a no-op when duration is 0.
@@ -104,8 +98,6 @@ public:
         Resets the tween's progress to the beginning.
     */
     void restart();
-
-    void disableYoyo();
     
 private:
     void addKeyframe(const TweenKeyframe& keyframe);
@@ -126,10 +118,9 @@ private:
     bool paused_ = false;
     bool running_ = false;
     bool deleteSelf_ = true;
-    bool yoyoMode_ = false;
     bool reversed_ = false;
     bool repeatForever_ = false;
-    bool stopRepeatQueued_ = false;
+    bool hasEverStarted_ = false;
 };
 
 }

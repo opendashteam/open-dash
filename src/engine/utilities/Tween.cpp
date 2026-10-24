@@ -211,24 +211,25 @@ Tween& Tween::retain() {
     return *this;
 }
 
-Tween &Tween::enableYoyo() {
-    yoyoMode_ = true;
-    return *this;
-}
-
 Tween &Tween::repeatForever() {
     repeatForever_ = true;
     return *this;
 }
 
 Tween &Tween::stopRepeating() {
-    stopRepeatQueued_ = true;
+    repeatForever_ = true;
     return *this;
 }
 
 void Tween::start() {
-    Director::get()->startTween(this);
+    if (running_) return;
+    restart();
     running_ = true;
+
+    if (!hasEverStarted_) {
+        hasEverStarted_ = true;
+        Director::get()->startTween(this);
+    }
 }
 
 void Tween::stop() {
@@ -241,6 +242,7 @@ void Tween::restart() {
     value_ = initialValue_;
     from_ = initialValue_;
     reversed_ = false;
+    elapsed_ = 0.0f;
 }
 
 void Tween::addKeyframe(const TweenKeyframe& keyframe) {
@@ -256,24 +258,25 @@ void Tween::resume() {
     paused_ = false;
 }
 
-void Tween::disableYoyo() {
-    yoyoMode_ = false;
-}
-
 void Tween::step(float dt) {
     if (!running_ || paused_ || keyframeCount_ <= 0) return;
 
     elapsed_ += dt;
-
     auto& kf = keyFrames_[keyframeIndex_];
-    auto& easeFn = kf.easeFunction;
-    float t = std::clamp(elapsed_ / kf.duration, 0.0f, 1.0f);
 
-    if (reversed_) t = 1.0f - t;
+    if (kf.duration <= 0.0f) { // Prevent division by zero
+        value_ = kf.to;
+    }
+    else {
+        auto& easeFn = kf.easeFunction;
+        float t = std::clamp(elapsed_ / kf.duration, 0.0f, 1.0f);
 
-    float easedT = easeFn ? easeFn(t) : t;
+        if (reversed_) t = 1.0f - t;
 
-    value_ = std::lerp(from_, kf.to, easedT);
+        float easedT = easeFn ? easeFn(t) : t;
+
+        value_ = std::lerp(from_, kf.to, easedT);        
+    }
 
     if (auto& onUpdate = kf.options.onUpdate)
         onUpdate(value_);
@@ -283,14 +286,9 @@ void Tween::step(float dt) {
         return;
     }
 
-    if (t == 1.0f) {
+    if (elapsed_ >= kf.duration) {
         if (kf.options.yoyo && !reversed_) {
             reverseFromYoyo(kf);
-            return;
-        }
-        
-        if (repeatForever_ && !stopRepeatQueued_) {
-            reversed_ = false;
             return;
         }
 
@@ -305,14 +303,25 @@ void Tween::keyframeCompleted(const TweenKeyframe& kf) {
         onComplete();
 
     from_ = kf.to;
-    elapsed_ = 0.0f;
+    elapsed_ -= kf.duration;
     keyframeIndex_++;
+    reversed_ = false;
 
     if (keyframeIndex_ >= keyframeCount_)
         tweenCompleted();
 }
 
 void Tween::tweenCompleted() {
+    if (repeatForever_) {
+
+        // Resetting elapsed time during loops causes drift
+        float elapsed = elapsed_;
+        restart();
+        elapsed_ = elapsed;
+
+        return;
+    }
+
     running_ = false;
 
     if (deleteSelf_)
@@ -321,7 +330,7 @@ void Tween::tweenCompleted() {
 
 void Tween::reverseFromYoyo(const TweenKeyframe& kf) {
     reversed_ = true;
-    elapsed_ = 0.0f;
+    elapsed_ -= kf.duration;
 }
 
 }
