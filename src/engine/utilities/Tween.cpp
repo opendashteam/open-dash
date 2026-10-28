@@ -246,8 +246,7 @@ void Tween::restart() {
 }
 
 void Tween::addKeyframe(const TweenKeyframe& keyframe) {
-    keyFrames_.push_back(keyframe);
-    keyframeCount_++;
+    keyframes_.push_back(keyframe);
 }
 
 void Tween::pause() {
@@ -259,10 +258,10 @@ void Tween::resume() {
 }
 
 void Tween::step(float dt) {
-    if (!running_ || paused_ || keyframeCount_ <= 0) return;
+    if (!running_ || paused_ || keyframes_.size() <= 0) return;
 
     elapsed_ += dt;
-    auto& kf = keyFrames_[keyframeIndex_];
+    auto& kf = keyframes_[keyframeIndex_];
 
     if (kf.duration <= 0.0f) { // Prevent division by zero
         value_ = kf.to;
@@ -307,7 +306,7 @@ void Tween::keyframeCompleted(const TweenKeyframe& kf) {
     keyframeIndex_++;
     reversed_ = false;
 
-    if (keyframeIndex_ >= keyframeCount_)
+    if (keyframeIndex_ >= keyframes_.size())
         tweenCompleted();
 }
 

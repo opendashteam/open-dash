@@ -106,9 +106,8 @@ private:
     void tweenCompleted();
     void reverseFromYoyo(const TweenKeyframe& kf);
 private:
-    std::vector<TweenKeyframe> keyFrames_{};
+    std::vector<TweenKeyframe> keyframes_{};
     int keyframeIndex_ = 0;
-    int keyframeCount_ = 0;
 
     float value_ = 0.0f;
     float initialValue_ = 0.0f;
